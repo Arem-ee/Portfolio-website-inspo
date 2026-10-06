@@ -156,28 +156,6 @@ function populateSiteContent() {
   const statementText = document.getElementById("statement-text");
   if (statementText) statementText.textContent = SITE_CONTENT.remainingBody.paragraph;
 
-  // Project Cards
-  const projectRows = document.querySelectorAll(".project-row");
-  projectRows.forEach((row, index) => {
-    const proj = SITE_CONTENT.projects[index];
-    if (!proj) return;
-    const titleEl = row.querySelector(".project-info__title");
-    const descEl = row.querySelector(".project-info__desc");
-    const linkEl = row.querySelector(".project-info__link");
-    const imgEl = row.querySelector(".project-card__img");
-
-    if (titleEl) titleEl.textContent = proj.title;
-    if (descEl) descEl.textContent = proj.description;
-    if (linkEl) {
-      linkEl.href = proj.url || "#";
-      linkEl.innerHTML = `${proj.linkText || "View project"} <span class="project-info__arrow" aria-hidden="true">&rarr;</span>`;
-    }
-    if (imgEl && proj.image) {
-      imgEl.src = proj.image;
-      imgEl.alt = proj.alt || proj.title;
-    }
-  });
-
   // Footer Content
   const footerLogo = document.querySelector(".footer-logo");
   if (footerLogo) footerLogo.textContent = SITE_CONTENT.brand.name;
@@ -239,7 +217,7 @@ function setupHeroInteractions(prefersReducedMotion) {
     // Initial entrance timeline (approx 1.2s total sequence)
     const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
-    tl.fromTo(nav, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 })
+    tl.fromTo(nav, { opacity: 0, y: -24 }, { opacity: 1, y: 0, duration: 0.6 })
       .fromTo([headlineLeft, headlineRight], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.15 }, "-=0.3")
       .fromTo(characterWrapper, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.9 }, "-=0.6")
       .fromTo(shadow, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.8 }, "-=0.7")
