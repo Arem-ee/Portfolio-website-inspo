@@ -1,0 +1,317 @@
+<!-- 
+  Asset placement:
+  - Place Image 1 at: assets/character.png
+  - Place Project screenshots at: assets/project-1.jpg, assets/project-2.jpg, assets/project-3.jpg, assets/project-4.jpg, assets/project-5.jpg
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arthur Chen — Design Engineer & Kinetic Motion</title>
+  <meta name="description" content="Tactile web engineering rooted in weight, tension, and kinetic nuance. Artisan portfolio with physical chain linkage systems.">
+
+  <!-- Google Fonts: Space Grotesk (Headings) & Inter (Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- GSAP & ScrollTrigger from cdnjs CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+</head>
+<body>
+
+  <!-- Top Scroll Progress Line -->
+  <div class="scroll-progress" id="scroll-progress" role="progressbar" aria-label="Page reading progress" aria-valuemin="0" aria-valuemax="100"></div>
+
+  <!-- Header & Navigation -->
+  <header class="site-header">
+    <nav class="nav" aria-label="Primary navigation">
+      <a href="#hero" class="nav__logo">ARTHUR CHEN</a>
+      <ul class="nav__list">
+        <li><a href="#projects" class="nav__link">Selected Works</a></li>
+        <li><a href="#statement" class="nav__link">Perspective</a></li>
+        <li><a href="#contact" class="nav__link">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <!-- SECTION 1: HERO SECTION -->
+    <section class="hero" id="hero">
+      <div class="hero__glow" aria-hidden="true"></div>
+
+      <div class="hero__container">
+        <!-- Left Headline Column -->
+        <div class="hero__headline-col hero__headline-col--left">
+          <h1 class="hero__title" id="hero-title-left">PHYSICAL</h1>
+          <p class="hero__subtext" id="hero-subtext-left">Tactile web engineering rooted in mass, tension, and spatial balance.</p>
+        </div>
+
+        <!-- Right Headline Column -->
+        <div class="hero__headline-col hero__headline-col--right">
+          <h2 class="hero__title" id="hero-title-right">DIGITAL</h2>
+          <p class="hero__subtext" id="hero-subtext-right">Designing deliberate kinetic interfaces that feel crafted, grounded, and alive.</p>
+        </div>
+      </div>
+
+      <!-- Centered Character with Depth Illusion -->
+      <div class="hero__character-wrapper">
+        <img 
+          src="assets/character.png" 
+          alt="3D stylized character of Arthur Chen wearing glasses and a sage green sweater" 
+          class="hero__character-img"
+          width="480"
+          height="800"
+        >
+        <div class="hero__shadow" aria-hidden="true"></div>
+      </div>
+
+      <!-- Scroll Hint -->
+      <div class="hero__scroll-hint" aria-hidden="true">
+        <div class="hero__scroll-dot"></div>
+      </div>
+    </section>
+
+    <!-- SECTION 2 & 3: PROJECT CARDS (THE ZIGZAG) & ANIMATED CHAINS -->
+    <section class="projects-section" id="projects-section">
+      <!-- Inline SVG Layer for Animated Hanging Chains -->
+      <svg class="chains-layer" id="chains-layer" aria-hidden="true"></svg>
+
+      <div class="projects-container" id="projects">
+        <!-- Card 1: Left -->
+        <article class="project-row project-row--left" data-index="1">
+          <div class="project-card">
+            <div class="project-card__media">
+              <img 
+                src="assets/project-1.jpg" 
+                alt="Minimal tactile timepiece exhibition and interface layout" 
+                class="project-card__img"
+                width="1280" 
+                height="800"
+                loading="lazy"
+              >
+            </div>
+          </div>
+          <div class="project-info">
+            <h3 class="project-info__title">Solace Timepieces</h3>
+            <p class="project-info__desc">An architectural catalog for minimalist horology with physics-based bezel rotation and dampened inertia.</p>
+            <a href="#" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
+          </div>
+        </article>
+
+        <!-- Card 2: Right -->
+        <article class="project-row project-row--right" data-index="2">
+          <div class="project-card">
+            <div class="project-card__media">
+              <img 
+                src="assets/project-2.jpg" 
+                alt="Tensile structural design and architectural wire-rope models" 
+                class="project-card__img"
+                width="1280" 
+                height="800"
+                loading="lazy"
+              >
+            </div>
+          </div>
+          <div class="project-info">
+            <h3 class="project-info__title">Catenary Studios</h3>
+            <p class="project-info__desc">A spatial archive documenting structural tensile architecture and wire-rope balance systems.</p>
+            <a href="#" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
+          </div>
+        </article>
+
+        <!-- Card 3: Left -->
+        <article class="project-row project-row--left" data-index="3">
+          <div class="project-card">
+            <div class="project-card__media">
+              <img 
+                src="assets/project-3.jpg" 
+                alt="Minimal stoneware ceramics and editorial typography platform" 
+                class="project-card__img"
+                width="1280" 
+                height="800"
+                loading="lazy"
+              >
+            </div>
+          </div>
+          <div class="project-info">
+            <h3 class="project-info__title">Kura Monolith</h3>
+            <p class="project-info__desc">Editorial identity and commerce platform for Japanese ceramics sculpted from stoneware clay.</p>
+            <a href="#" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
+          </div>
+        </article>
+
+        <!-- Card 4: Right -->
+        <article class="project-row project-row--right" data-index="4">
+          <div class="project-card">
+            <div class="project-card__media">
+              <img 
+                src="assets/project-4.jpg" 
+                alt="Mechanical linkage diagrams and kinetic balance balance study" 
+                class="project-card__img"
+                width="1280" 
+                height="800"
+                loading="lazy"
+              >
+            </div>
+          </div>
+          <div class="project-info">
+            <h3 class="project-info__title">Tension &amp; Rest</h3>
+            <p class="project-info__desc">An interactive essay exploring mechanical linkage systems, pendulums, and kinetic equilibrium.</p>
+            <a href="#" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
+          </div>
+        </article>
+
+        <!-- Card 5: Left -->
+        <article class="project-row project-row--left" data-index="5">
+          <div class="project-card">
+            <div class="project-card__media">
+              <img 
+                src="assets/project-5.jpg" 
+                alt="Woodwork joinery brand identity and spatial wayfinding" 
+                class="project-card__img"
+                width="1280" 
+                height="800"
+                loading="lazy"
+              >
+            </div>
+          </div>
+          <div class="project-info">
+            <h3 class="project-info__title">Atelier Forma</h3>
+            <p class="project-info__desc">Custom brand typography and spatial wayfinding for an artisan furniture workshop in Milan.</p>
+            <a href="#" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- SECTION 4: REMAINING BODY -->
+    <section class="statement-section" id="statement">
+      <div class="statement-container">
+        <h2 class="statement-title" id="statement-title">Physical intention in a weightless medium.</h2>
+        <p class="statement-text" id="statement-text">
+          Most digital interfaces treat movement as mere decoration. We believe motion is an expression of mass, friction, and kinetic balance. When elements respect physical constraints—gravity, chain tension, and dampened inertia—the screen ceases to be an abstraction and becomes an enduring space you can feel.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 5 & 6: BOTTOM SPLIT AREA (FOOTER & CONTACT FORM) -->
+    <div class="bottom-area" id="contact">
+      <!-- Left Half: Footer -->
+      <footer class="site-footer">
+        <div class="footer-top">
+          <span class="footer-logo">ARTHUR CHEN</span>
+          <p class="footer-sentence">Designing tactile digital systems with deliberate kinetic movement and sculptural typography.</p>
+          
+          <div class="footer-links-grid">
+            <div class="footer-nav-col">
+              <h4 class="footer-nav-title">Pages</h4>
+              <ul class="footer-link-list">
+                <li><a href="#projects" class="footer-link">Selected Works</a></li>
+                <li><a href="#statement" class="footer-link">Perspective</a></li>
+                <li><a href="#hero" class="footer-link">Colophon</a></li>
+                <li><a href="#projects" class="footer-link">Archive</a></li>
+              </ul>
+            </div>
+            <div class="footer-nav-col">
+              <h4 class="footer-nav-title">Social</h4>
+              <ul class="footer-link-list">
+                <li><a href="https://read.cv" class="footer-link" target="_blank" rel="noopener noreferrer">Read.cv</a></li>
+                <li><a href="https://github.com" class="footer-link" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                <li><a href="https://cosmos.so" class="footer-link" target="_blank" rel="noopener noreferrer">Cosmos</a></li>
+                <li><a href="https://are.na" class="footer-link" target="_blank" rel="noopener noreferrer">Are.na</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p class="footer-copyright" id="copyright-text">&copy; <span id="copyright-year">2026</span> Arthur Chen. All rights reserved.</p>
+          <a href="#hero" class="footer-back-top" id="back-to-top">Back to top <span aria-hidden="true">&uarr;</span></a>
+        </div>
+      </footer>
+
+      <!-- Vertical Divider -->
+      <div class="bottom-divider" aria-hidden="true"></div>
+
+      <!-- Right Half: Contact Form -->
+      <section class="contact-section" aria-label="Contact Form">
+        <div class="contact-form-wrapper">
+          <form class="contact-form" id="contact-form" novalidate>
+            <!-- Honeypot Field for Spam Prevention -->
+            <div style="display:none;" aria-hidden="true">
+              <label for="field-trap">Do not fill this</label>
+              <input type="text" id="field-trap" name="_bot_trap" tabindex="-1" autocomplete="off">
+            </div>
+
+            <!-- Full Name -->
+            <div class="form-field">
+              <div class="floating-group">
+                <input type="text" id="field-name" name="name" class="form-input" placeholder=" " required autocomplete="name">
+                <label for="field-name" class="floating-label">Full name</label>
+              </div>
+              <span class="field-error" id="error-name" role="alert"></span>
+            </div>
+
+            <!-- Email Address -->
+            <div class="form-field">
+              <div class="floating-group">
+                <input type="email" id="field-email" name="email" class="form-input" placeholder=" " required autocomplete="email">
+                <label for="field-email" class="floating-label">Email address</label>
+              </div>
+              <span class="field-error" id="error-email" role="alert"></span>
+            </div>
+
+            <!-- Dropdown: What do you need? -->
+            <div class="form-field">
+              <div class="floating-group is-active">
+                <select id="field-need" name="need" class="form-select" aria-label="What do you need?">
+                  <option value="identity">Full Identity &amp; Web Direction</option>
+                  <option value="kinetic">Kinetic Motion &amp; Interaction Design</option>
+                  <option value="architecture">Design System Architecture</option>
+                  <option value="consultation">Editorial &amp; Spatial Consultation</option>
+                </select>
+                <label for="field-need" class="floating-label">What do you need?</label>
+              </div>
+            </div>
+
+            <!-- Message -->
+            <div class="form-field">
+              <div class="floating-group">
+                <textarea id="field-message" name="message" class="form-textarea" placeholder=" " required minlength="10"></textarea>
+                <label for="field-message" class="floating-label">Message</label>
+              </div>
+              <span class="field-error" id="error-message" role="alert"></span>
+            </div>
+
+            <!-- Full-width Submit Button in --sage with Arrow -->
+            <button type="submit" class="form-submit-btn" id="form-submit-btn">
+              <span>Send inquiry</span>
+              <span aria-hidden="true">&rarr;</span>
+            </button>
+          </form>
+
+          <!-- Success State -->
+          <div class="form-success-state" id="contact-success" role="status" aria-live="polite">
+            <div class="success-check-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <h3 class="success-title">Message received.</h3>
+            <p class="success-body">Thank you for reaching out. I typically respond within two business days.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Main JavaScript File -->
+  <script src="main.js"></script>
+</body>
+</html>

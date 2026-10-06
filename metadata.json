@@ -1,0 +1,6 @@
+{
+  "name": "Kinetic Portfolio & Zigzag Showcase",
+  "description": "Artisan editorial portfolio with custom physics-inspired chain link animations and interactive project zigzag showcase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
