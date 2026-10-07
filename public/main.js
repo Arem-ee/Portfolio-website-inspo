@@ -5,102 +5,99 @@
  */
 
 /**
- * Global Site Content Configuration
+ * FIX 6: Global Site Content with Neutral Placeholders
  * Modify this object to change any textual content across the entire page.
  */
 const SITE_CONTENT = {
   brand: {
-    name: "ARTHUR CHEN",
-    role: "Design Engineer & Kinetic Motion",
-    tagline: "Exploring weight, tension, and kinetic nuance across physical and digital spaces."
+    name: "Your Name",
+    description: "A short sentence describing your creative perspective and practice."
   },
   navigation: [
-    { label: "Selected Works", href: "#projects" },
-    { label: "Perspective", href: "#statement" },
+    { label: "Work", href: "#projects" },
+    { label: "About", href: "#statement" },
     { label: "Contact", href: "#contact" }
   ],
   hero: {
-    headlineLeft: "PHYSICAL",
-    headlineRight: "DIGITAL",
-    subtextLeft: "Tactile web engineering rooted in mass, tension, and spatial balance.",
-    subtextRight: "Designing deliberate kinetic interfaces that feel crafted, grounded, and alive."
+    headlineLeft: "YOUR",
+    headlineRight: "NAME",
+    subtextLeft: "A concise introductory sentence describing your perspective.",
+    subtextRight: "A second concise sentence highlighting your core practice."
   },
   projects: [
     {
       id: 1,
-      title: "Solace Timepieces",
-      description: "An architectural catalog for minimalist horology with physics-based bezel rotation and dampened inertia.",
+      title: "Project One",
+      description: "A short plain sentence describing the scope and outcome of this project.",
       linkText: "View project",
       url: "#",
       image: "assets/project-1.jpg",
-      alt: "Monochrome tactile horology exhibition layout"
+      alt: "Project One overview"
     },
     {
       id: 2,
-      title: "Catenary Studios",
-      description: "A spatial archive documenting structural tensile architecture and wire-rope balance systems.",
+      title: "Project Two",
+      description: "A short plain sentence describing the scope and outcome of this project.",
       linkText: "View project",
       url: "#",
       image: "assets/project-2.jpg",
-      alt: "Tensile structural design and architectural models"
+      alt: "Project Two overview"
     },
     {
       id: 3,
-      title: "Kura Monolith",
-      description: "Editorial identity and commerce platform for Japanese ceramics sculpted from stoneware clay.",
+      title: "Project Three",
+      description: "A short plain sentence describing the scope and outcome of this project.",
       linkText: "View project",
       url: "#",
       image: "assets/project-3.jpg",
-      alt: "Minimal stoneware ceramics and editorial typography"
+      alt: "Project Three overview"
     },
     {
       id: 4,
-      title: "Tension & Rest",
-      description: "An interactive essay exploring mechanical linkage systems, pendulums, and kinetic equilibrium.",
+      title: "Project Four",
+      description: "A short plain sentence describing the scope and outcome of this project.",
       linkText: "View project",
       url: "#",
       image: "assets/project-4.jpg",
-      alt: "Mechanical linkage and kinetic balance diagram"
+      alt: "Project Four overview"
     },
     {
       id: 5,
-      title: "Atelier Forma",
-      description: "Custom brand typography and spatial wayfinding for an artisan furniture workshop in Milan.",
+      title: "Project Five",
+      description: "A short plain sentence describing the scope and outcome of this project.",
       linkText: "View project",
       url: "#",
       image: "assets/project-5.jpg",
-      alt: "Artisan woodwork joinery and spatial typography"
+      alt: "Project Five overview"
     }
   ],
   remainingBody: {
-    statement: "Physical intention in a weightless medium.",
-    paragraph: "Most digital interfaces treat movement as mere decoration. We believe motion is an expression of mass, friction, and kinetic balance. When elements respect physical constraints—gravity, chain tension, and dampened inertia—the screen ceases to be an abstraction and becomes an enduring space you can feel."
+    statement: "A clear two-line statement summarizing your perspective.",
+    paragraph: "A single paragraph of placeholder text offering further detail about your methodology, principles, and collaborative approach without extraneous decorative elements."
   },
   footer: {
-    description: "Designing tactile digital systems with deliberate kinetic movement and sculptural typography.",
+    description: "A brief concluding sentence about your work and availability.",
     pages: [
-      { label: "Selected Works", href: "#projects" },
-      { label: "Perspective", href: "#statement" },
-      { label: "Colophon", href: "#" },
-      { label: "Archive", href: "#" }
+      { label: "Work", href: "#projects" },
+      { label: "About", href: "#statement" },
+      { label: "Contact", href: "#contact" }
     ],
     social: [
-      { label: "Read.cv", href: "https://read.cv" },
-      { label: "GitHub", href: "https://github.com" },
-      { label: "Cosmos", href: "https://cosmos.so" },
-      { label: "Are.na", href: "https://are.na" }
+      { label: "Link One", href: "#" },
+      { label: "Link Two", href: "#" },
+      { label: "Link Three", href: "#" }
     ],
-    copyrightName: "Arthur Chen. All rights reserved."
+    copyrightName: "Your Name. All rights reserved."
   },
   contact: {
     options: [
-      { value: "identity", label: "Full Identity & Web Direction" },
-      { value: "kinetic", label: "Kinetic Motion & Interaction Design" },
-      { value: "architecture", label: "Design System Architecture" },
-      { value: "consultation", label: "Editorial & Spatial Consultation" }
+      { value: "option-1", label: "Option One" },
+      { value: "option-2", label: "Option Two" },
+      { value: "option-3", label: "Option Three" },
+      { value: "option-4", label: "Option Four" }
     ],
     successTitle: "Message received.",
-    successBody: "Thank you for reaching out. I typically respond within two business days."
+    successBody: "Thank you for reaching out. We will respond shortly."
   }
 };
 
@@ -114,13 +111,17 @@ function submitForm(data) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Check user preference for motion
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Initialize all sections
   populateSiteContent();
   setupScrollProgress();
-  setupHeroInteractions(prefersReducedMotion);
+
+  // FIX A.2: Execute background-removal fallback on character before reveal animation
+  const characterImg = document.querySelector(".hero__character-img");
+  prepareCharacterImage(characterImg, () => {
+    setupHeroInteractions(prefersReducedMotion);
+  });
+
   setupProjectEntrance(prefersReducedMotion);
   setupChains(prefersReducedMotion);
   setupStatementEntrance(prefersReducedMotion);
@@ -129,14 +130,161 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
+ * FIX A.2: Automatic background-removal fallback
+ * Draws character onto canvas, averages 4 corners, flood-fills background to transparent,
+ * softens halo edges, and removes baked-in floor shadow under feet.
+ */
+function prepareCharacterImage(imgEl, onReady) {
+  if (!imgEl) return onReady();
+
+  function process() {
+    try {
+      const w = imgEl.naturalWidth || imgEl.width;
+      const h = imgEl.naturalHeight || imgEl.height;
+      if (!w || !h) return onReady();
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(imgEl, 0, 0);
+
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+
+      // Check corner pixel alphas
+      const cIndices = [
+        0,                            // top-left
+        (w - 1) * 4,                  // top-right
+        (h - 1) * w * 4,              // bottom-left
+        ((h - 1) * w + (w - 1)) * 4   // bottom-right
+      ];
+
+      const alreadyTransparent = cIndices.every((idx) => data[idx + 3] < 10);
+      if (alreadyTransparent) {
+        return onReady();
+      }
+
+      // Read average colour of 4 corner pixels
+      let rSum = 0, gSum = 0, bSum = 0;
+      cIndices.forEach((idx) => {
+        rSum += data[idx];
+        gSum += data[idx + 1];
+        bSum += data[idx + 2];
+      });
+      const bgR = rSum / 4;
+      const bgG = gSum / 4;
+      const bgB = bSum / 4;
+
+      const tolerance = 28;
+      const visited = new Uint8Array(w * h);
+      const queue = [0, w - 1, (h - 1) * w, (h - 1) * w + (w - 1)];
+      visited[0] = 1;
+      visited[w - 1] = 1;
+      visited[(h - 1) * w] = 1;
+      visited[(h - 1) * w + (w - 1)] = 1;
+
+      function matchesBg(idx) {
+        const dr = Math.abs(data[idx] - bgR);
+        const dg = Math.abs(data[idx + 1] - bgG);
+        const db = Math.abs(data[idx + 2] - bgB);
+        return dr <= tolerance && dg <= tolerance && db <= tolerance;
+      }
+
+      // Check baked-in ground shadow near bottom
+      const floorThresholdY = Math.floor(h * 0.76);
+      function isFloorShadowPixel(cy, idx) {
+        if (cy < floorThresholdY) return false;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const maxChroma = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+        const diffR = bgR - r;
+        const diffG = bgG - g;
+        const diffB = bgB - b;
+        return maxChroma < 26 && diffR >= -12 && diffR < 70 && diffG >= -12 && diffG < 70 && diffB >= -12 && diffB < 70;
+      }
+
+      // Flood-fill inward from all four corners
+      let head = 0;
+      while (head < queue.length) {
+        const curr = queue[head++];
+        const cx = curr % w;
+        const cy = Math.floor(curr / w);
+        const pIdx = curr * 4;
+
+        data[pIdx + 3] = 0; // Set reached pixel transparent
+
+        // Check 4-connected neighbors
+        const nList = [];
+        if (cx > 0) nList.push(curr - 1);
+        if (cx < w - 1) nList.push(curr + 1);
+        if (cy > 0) nList.push(curr - w);
+        if (cy < h - 1) nList.push(curr + w);
+
+        for (let i = 0; i < nList.length; i++) {
+          const n = nList[i];
+          if (!visited[n]) {
+            visited[n] = 1;
+            const ny = Math.floor(n / w);
+            const nIdx = n * 4;
+            if (matchesBg(nIdx) || isFloorShadowPixel(ny, nIdx)) {
+              queue.push(n);
+            }
+          }
+        }
+      }
+
+      // Soften edge: remaining pixels touching transparent pixels have alpha reduced by 40%
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          const idx = (y * w + x) * 4;
+          if (data[idx + 3] > 0) {
+            const hasTransparentNeighbor =
+              data[((y - 1) * w + x) * 4 + 3] === 0 ||
+              data[((y + 1) * w + x) * 4 + 3] === 0 ||
+              data[(y * w + (x - 1)) * 4 + 3] === 0 ||
+              data[(y * w + (x + 1)) * 4 + 3] === 0;
+
+            if (hasTransparentNeighbor) {
+              data[idx + 3] = Math.round(data[idx + 3] * 0.6);
+            }
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      imgEl.src = canvas.toDataURL("image/png");
+      onReady();
+    } catch (err) {
+      console.warn("Transparency fallback error, showing original:", err);
+      onReady();
+    }
+  }
+
+  if (imgEl.complete && imgEl.naturalWidth > 0) {
+    process();
+  } else {
+    imgEl.addEventListener("load", process, { once: true });
+    imgEl.addEventListener("error", () => onReady(), { once: true });
+  }
+}
+
+/**
  * Injects content from SITE_CONTENT into the DOM
  */
 function populateSiteContent() {
-  // Navigation Logo
   const logoEl = document.querySelector(".nav__logo");
   if (logoEl) logoEl.textContent = SITE_CONTENT.brand.name;
 
-  // Hero Headlines and Subtexts
+  const navLinks = document.querySelectorAll(".nav__link");
+  if (navLinks.length >= SITE_CONTENT.navigation.length) {
+    SITE_CONTENT.navigation.forEach((item, idx) => {
+      navLinks[idx].textContent = item.label;
+      navLinks[idx].setAttribute("href", item.href);
+    });
+  }
+
   const titleLeft = document.getElementById("hero-title-left");
   if (titleLeft) titleLeft.textContent = SITE_CONTENT.hero.headlineLeft;
 
@@ -149,25 +297,65 @@ function populateSiteContent() {
   const subtextRight = document.getElementById("hero-subtext-right");
   if (subtextRight) subtextRight.textContent = SITE_CONTENT.hero.subtextRight;
 
-  // Remaining Body
+  const projectRows = document.querySelectorAll(".project-row");
+  projectRows.forEach((row, index) => {
+    const proj = SITE_CONTENT.projects[index];
+    if (!proj) return;
+    const titleEl = row.querySelector(".project-info__title");
+    const descEl = row.querySelector(".project-info__desc");
+    const linkEl = row.querySelector(".project-info__link");
+    const imgEl = row.querySelector(".project-card__img");
+
+    if (titleEl) titleEl.textContent = proj.title;
+    if (descEl) descEl.textContent = proj.description;
+    if (linkEl) {
+      linkEl.href = proj.url || "#";
+      linkEl.innerHTML = `${proj.linkText || "View project"} <span class="project-info__arrow" aria-hidden="true">&rarr;</span>`;
+    }
+    if (imgEl && proj.image) {
+      imgEl.src = proj.image;
+      imgEl.alt = proj.alt || proj.title;
+    }
+  });
+
   const statementTitle = document.getElementById("statement-title");
   if (statementTitle) statementTitle.textContent = SITE_CONTENT.remainingBody.statement;
 
   const statementText = document.getElementById("statement-text");
   if (statementText) statementText.textContent = SITE_CONTENT.remainingBody.paragraph;
 
-  // Footer Content
   const footerLogo = document.querySelector(".footer-logo");
   if (footerLogo) footerLogo.textContent = SITE_CONTENT.brand.name;
 
   const footerSentence = document.querySelector(".footer-sentence");
   if (footerSentence) footerSentence.textContent = SITE_CONTENT.footer.description;
 
+  const footerPagesList = document.getElementById("footer-pages-list");
+  if (footerPagesList) {
+    footerPagesList.innerHTML = SITE_CONTENT.footer.pages
+      .map((item) => `<li><a href="${item.href}" class="footer-link">${item.label}</a></li>`)
+      .join("");
+  }
+
+  const footerSocialList = document.getElementById("footer-social-list");
+  if (footerSocialList) {
+    footerSocialList.innerHTML = SITE_CONTENT.footer.social
+      .map((item) => `<li><a href="${item.href}" class="footer-link">${item.label}</a></li>`)
+      .join("");
+  }
+
   const copyrightYear = document.getElementById("copyright-year");
   if (copyrightYear) copyrightYear.textContent = new Date().getFullYear();
 
   const copyrightText = document.getElementById("copyright-text");
   if (copyrightText) copyrightText.textContent = ` © ${new Date().getFullYear()} ${SITE_CONTENT.footer.copyrightName}`;
+
+  const needSelect = document.getElementById("field-need");
+  if (needSelect) {
+    needSelect.innerHTML = SITE_CONTENT.contact.options
+      .map((opt) => `<option value="${opt.value}">${opt.label}</option>`)
+      .join("");
+  }
 }
 
 /**
@@ -214,16 +402,15 @@ function setupHeroInteractions(prefersReducedMotion) {
   }
 
   if (typeof gsap !== "undefined") {
-    // Initial entrance timeline (approx 1.2s total sequence)
     const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
-    tl.fromTo(nav, { opacity: 0, y: -24 }, { opacity: 1, y: 0, duration: 0.6 })
+    tl.fromTo(nav, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 })
       .fromTo([headlineLeft, headlineRight], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.15 }, "-=0.3")
       .fromTo(characterWrapper, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.9 }, "-=0.6")
       .fromTo(shadow, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.8 }, "-=0.7")
       .fromTo(scrollHint, { opacity: 0 }, { opacity: 1, duration: 0.5 }, "-=0.3");
 
-    // Continuous floating character depth simulation (5 to 6s cycle, 14px, 1deg rotation)
+    // Float loop (about 14px up and down, 5 to 6s, sine ease-in-out, 1deg rotation)
     gsap.to(character, {
       y: -14,
       rotation: 1,
@@ -235,9 +422,9 @@ function setupHeroInteractions(prefersReducedMotion) {
 
     // In-sync floor shadow breathing: shrinks & lightens as character rises, darkens as it descends
     gsap.to(shadow, {
-      scaleX: 0.86,
-      scaleY: 0.86,
-      opacity: 0.22,
+      scaleX: 0.82,
+      scaleY: 0.82,
+      opacity: 0.2,
       duration: 2.7,
       ease: "sine.inOut",
       yoyo: true,
@@ -272,7 +459,7 @@ function setupProjectEntrance(prefersReducedMotion) {
         ease: "power2.out",
         scrollTrigger: {
           trigger: row,
-          start: "top 82%",
+          start: "top 85%",
           toggleActions: "play none none none"
         }
       }
@@ -281,8 +468,9 @@ function setupProjectEntrance(prefersReducedMotion) {
 }
 
 /**
- * Section 3: The Animated Chains
- * Builds exactly 4 inline SVG chains connecting neighboring cards with alternating 90-deg links
+ * FIX B: REAL, CLEARLY READABLE METAL CHAINS
+ * Builds exactly 4 hanging chains with 26x44px alternating face-on and edge-on links,
+ * true over-under interlocking via clipPath, SVG metal gradient, and end anchors.
  */
 let chainInstances = [];
 
@@ -292,7 +480,6 @@ function setupChains(prefersReducedMotion) {
   if (!container || !svgLayer) return;
 
   function constructAllChains() {
-    // Clear existing triggers and SVG content
     chainInstances.forEach((inst) => {
       if (inst.trigger) inst.trigger.kill();
       if (inst.swayTween) inst.swayTween.kill();
@@ -300,18 +487,47 @@ function setupChains(prefersReducedMotion) {
     chainInstances = [];
     svgLayer.innerHTML = "";
 
+    // Inject Shared SVG Definitions (linearGradient, dropShadow, clipPaths)
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+
+    // Metal Linear Gradient
+    const metalGrad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+    metalGrad.setAttribute("id", "chain-metal-grad");
+    metalGrad.setAttribute("x1", "0%");
+    metalGrad.setAttribute("y1", "0%");
+    metalGrad.setAttribute("x2", "0%");
+    metalGrad.setAttribute("y2", "100%");
+    metalGrad.innerHTML = `
+      <stop offset="0%" stop-color="#4A4A4A"/>
+      <stop offset="35%" stop-color="#C2C2C2"/>
+      <stop offset="70%" stop-color="#808080"/>
+      <stop offset="100%" stop-color="#555555"/>
+    `;
+    defs.appendChild(metalGrad);
+
+    // Filter for soft 2px drop shadow
+    const filter = document.createElementNS("http://www.w3.org/2000/svg", "filter");
+    filter.setAttribute("id", "chain-shadow");
+    filter.setAttribute("x", "-20%");
+    filter.setAttribute("y", "-20%");
+    filter.setAttribute("width", "140%");
+    filter.setAttribute("height", "140%");
+    filter.innerHTML = `<feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#1A1918" flood-opacity="0.28"/>`;
+    defs.appendChild(filter);
+
+    svgLayer.appendChild(defs);
+
     const rows = Array.from(document.querySelectorAll(".project-row"));
     if (rows.length < 2) return;
 
     const containerRect = container.getBoundingClientRect();
     const isMobile = window.innerWidth <= 900;
 
-    // Ensure SVG viewBox matches container bounds exactly
     svgLayer.setAttribute("width", `${containerRect.width}`);
     svgLayer.setAttribute("height", `${containerRect.height}`);
     svgLayer.setAttribute("viewBox", `0 0 ${containerRect.width} ${containerRect.height}`);
 
-    // Connect Card i to Card i+1 (exactly 4 chains for 5 cards)
+    // Build exactly 4 chains connecting the 5 neighboring cards
     for (let i = 0; i < rows.length - 1; i++) {
       const upperRow = rows[i];
       const lowerRow = rows[i + 1];
@@ -326,46 +542,49 @@ function setupChains(prefersReducedMotion) {
       let x1, y1, x2, y2;
 
       if (isMobile) {
-        // Under 900px: short straight vertical chains between cards
+        // Vertical chain under 900px
         x1 = upperRect.left + upperRect.width / 2 - containerRect.left;
         y1 = upperRect.bottom - containerRect.top;
         x2 = lowerRect.left + lowerRect.width / 2 - containerRect.left;
         y2 = lowerRect.top - containerRect.top;
       } else {
-        // Desktop: upper card bottom corner facing page center to lower card top edge
+        // Desktop: bottom corner of upper card facing page centre to top edge of lower card
         const upperIsLeft = upperRow.classList.contains("project-row--left");
         if (upperIsLeft) {
           x1 = upperRect.right - containerRect.left;
           y1 = upperRect.bottom - containerRect.top;
-          x2 = lowerRect.left + 24 - containerRect.left;
+          // Arrives near top-left of lower card
+          x2 = lowerRect.left + 54 - containerRect.left;
           y2 = lowerRect.top - containerRect.top;
         } else {
           x1 = upperRect.left - containerRect.left;
           y1 = upperRect.bottom - containerRect.top;
-          x2 = lowerRect.right - 24 - containerRect.left;
+          // Arrives near top-right of lower card
+          x2 = lowerRect.right - 54 - containerRect.left;
           y2 = lowerRect.top - containerRect.top;
         }
       }
 
-      // Generate chain links along catenary curve
-      const chainData = createChainSVG(svgLayer, x1, y1, x2, y2, i, isMobile);
+      const chainData = createInterlockingChain(svgLayer, defs, x1, y1, x2, y2, i);
 
       if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-        chainData.links.forEach((link) => (link.style.opacity = "1"));
+        chainData.linkUnits.forEach((u) => {
+          u.style.opacity = "1";
+          u.style.transform = "none";
+        });
         continue;
       }
 
-      // 1. Tied to ScrollTrigger with scrub: links appear one by one
+      // FIX B.7 & B.8: Chain fully completes before user scrolls past it (top 95% to top 55%)
       let hasTugged = false;
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: lowerRow,
-          start: "top 92%",
-          end: "top 52%",
-          scrub: 0.4,
+          start: "top 95%",
+          end: "top 55%",
+          scrub: 0.35,
           onUpdate: (self) => {
-            // Step 2: Trigger tug when last link reaches the lower card
-            if (self.progress >= 0.96 && !hasTugged) {
+            if (self.progress >= 0.98 && !hasTugged) {
               hasTugged = true;
               triggerTugEffect(chainData.group, upperCard, lowerCard);
             } else if (self.progress < 0.7) {
@@ -375,19 +594,20 @@ function setupChains(prefersReducedMotion) {
         }
       });
 
+      // Links drop 12px into place while fading in
       tl.fromTo(
-        chainData.links,
-        { opacity: 0, scale: 0.7 },
+        chainData.linkUnits,
+        { opacity: 0, y: -12 },
         {
           opacity: 1,
-          scale: 1,
+          y: 0,
           stagger: 0.05,
           duration: 1,
           ease: "none"
         }
       );
 
-      // 3. Continuous gentle swaying by ~1.5 degrees over 4 seconds, pivoting from top end
+      // Sway whole chain as one rigid unit (1.5 deg, 4s, pivoting at top anchor)
       const swayTween = gsap.to(chainData.group, {
         rotation: 1.5,
         transformOrigin: `${x1}px ${y1}px`,
@@ -401,17 +621,39 @@ function setupChains(prefersReducedMotion) {
     }
   }
 
-  // Initial build
   constructAllChains();
 
-  // Rebuild on window resize
+  // FIX B.8: Recalculate after images and fonts load, on resize, and with ResizeObserver
+  window.addEventListener("load", () => {
+    constructAllChains();
+    if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+  });
+
+  if (document.fonts) {
+    document.fonts.ready.then(() => {
+      constructAllChains();
+      if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+    });
+  }
+
   let resizeTimer;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       constructAllChains();
-    }, 150);
+      if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+    }, 120);
   });
+
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(() => {
+      constructAllChains();
+      if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+    });
+    ro.observe(container);
+    const allRows = document.querySelectorAll(".project-row");
+    allRows.forEach((r) => ro.observe(r));
+  }
 }
 
 /**
@@ -439,114 +681,218 @@ function triggerTugEffect(chainGroup, upperCard, lowerCard) {
 }
 
 /**
- * Renders alternating oval chain links along a catenary curve
+ * FIX B: Mathematical curve & realistic interlocking metal chain builder
+ * - Curve with ~6% sag, arriving nearly straight down at lower card
+ * - Links 26px wide by 44px long, spacing ~31px
+ * - Alternating Face-On oval rings & Edge-On capsules
+ * - Over-under interlocking layers using clipPath
+ * - Metal gradient, highlight line, 10px end anchors, and 2px drop shadow
  */
-function createChainSVG(svgLayer, x1, y1, x2, y2, chainIndex, isMobile) {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const dist = Math.hypot(dx, dy);
+function createInterlockingChain(svgLayer, defs, x1, y1, x2, y2, chainIndex) {
+  const dist = Math.hypot(x2 - x1, y2 - y1);
+  const sag = dist * 0.06;
 
-  // Link density: ~13px step distance between successive chain links
-  const step = 13;
-  const numLinks = Math.max(5, Math.round(dist / step));
-  const sagAmount = isMobile ? 6 : Math.min(50, Math.max(22, dist * 0.14));
+  // Cubic Bezier: starts outward, sags with weight, arrives going straight down at (x2, y2)
+  const c1x = x1 + (x2 - x1) * 0.35;
+  const c1y = y1 + sag + (y2 - y1) * 0.2;
+  const c2x = x2;
+  const c2y = y2 - Math.max(35, (y2 - y1) * 0.45);
 
+  function bezierPt(t) {
+    const mt = 1 - t;
+    const mt2 = mt * mt;
+    const mt3 = mt2 * mt;
+    const t2 = t * t;
+    const t3 = t2 * t;
+
+    const px = mt3 * x1 + 3 * mt2 * t * c1x + 3 * mt * t2 * c2x + t3 * x2;
+    const py = mt3 * y1 + 3 * mt2 * t * c1y + 3 * mt * t2 * c2y + t3 * y2;
+
+    // First derivative for tangent
+    const dx = 3 * mt2 * (c1x - x1) + 6 * mt * t * (c2x - c1x) + 3 * t2 * (x2 - c2x);
+    const dy = 3 * mt2 * (c1y - y1) + 6 * mt * t * (c2y - c1y) + 3 * t2 * (y2 - c2y);
+
+    return { x: px, y: py, dx, dy };
+  }
+
+  // Pre-sample curve for accurate arc length parameterization
+  const SAMPLES = 300;
+  const arcLengths = [0];
+  let prevPt = bezierPt(0);
+
+  for (let s = 1; s <= SAMPLES; s++) {
+    const t = s / SAMPLES;
+    const curPt = bezierPt(t);
+    const segDist = Math.hypot(curPt.x - prevPt.x, curPt.y - prevPt.y);
+    arcLengths.push(arcLengths[s - 1] + segDist);
+    prevPt = curPt;
+  }
+
+  const totalLength = arcLengths[SAMPLES];
+
+  // Spacing: center-to-center ~31px
+  const targetSpacing = 31;
+  const numSteps = Math.max(4, Math.round(totalLength / targetSpacing));
+  const actualSpacing = totalLength / numSteps;
+
+  function getPointAtDist(d) {
+    const target = Math.min(totalLength, Math.max(0, d));
+    // Binary search sample index
+    let low = 0, high = SAMPLES;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if (arcLengths[mid] < target) low = mid + 1;
+      else high = mid;
+    }
+    const idx = Math.max(1, low);
+    const segLen = arcLengths[idx] - arcLengths[idx - 1];
+    const frac = segLen > 0 ? (target - arcLengths[idx - 1]) / segLen : 0;
+    const t = (idx - 1 + frac) / SAMPLES;
+    return bezierPt(t);
+  }
+
+  // Main group for whole chain with soft 2px drop shadow
   const chainGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
   chainGroup.setAttribute("class", "chain-svg-group");
   chainGroup.setAttribute("id", `chain-group-${chainIndex}`);
+  chainGroup.setAttribute("filter", "url(#chain-shadow)");
 
-  const linkElements = [];
+  // ClipPaths for over-under interlocking (front half vs back half of face-on rings)
+  const clipBack = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+  clipBack.setAttribute("id", `clip-back-${chainIndex}`);
+  clipBack.innerHTML = `<rect x="-30" y="0" width="60" height="30"/>`;
+  defs.appendChild(clipBack);
 
-  for (let k = 0; k <= numLinks; k++) {
-    const t = k / numLinks;
+  const clipFront = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+  clipFront.setAttribute("id", `clip-front-${chainIndex}`);
+  clipFront.innerHTML = `<rect x="-30" y="-30" width="60" height="30"/>`;
+  defs.appendChild(clipFront);
 
-    // Catenary drape calculation
-    const px = x1 + t * dx;
-    const py = y1 + t * dy + sagAmount * 4 * t * (1 - t);
+  const linkUnits = [];
 
-    // Tangent angle
-    const tangentX = dx;
-    const tangentY = dy + sagAmount * 4 * (1 - 2 * t);
-    const angleRad = Math.atan2(tangentY, tangentX);
+  // Generate each link along curve (0 to numSteps)
+  for (let k = 0; k <= numSteps; k++) {
+    const pt = getPointAtDist(k * actualSpacing);
+    const angleRad = Math.atan2(pt.dy, pt.dx);
     const angleDeg = (angleRad * 180) / Math.PI;
 
-    const linkG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    linkG.setAttribute("class", "chain-link");
+    // Unit container for GSAP staggered drop animation
+    const unitG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    unitG.setAttribute("class", "chain-link-unit");
 
-    const isRotated90 = k % 2 === 1;
+    const isFaceOn = k % 2 === 1;
 
-    if (!isRotated90) {
-      // Face-on oval link
-      linkG.setAttribute("transform", `translate(${px}, ${py}) rotate(${angleDeg})`);
+    if (!isFaceOn) {
+      // EVEN: EDGE-ON solid capsule (8px wide by 40px long, turned 90 deg)
+      const edgeG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      edgeG.setAttribute("transform", `translate(${pt.x}, ${pt.y}) rotate(${angleDeg})`);
 
-      // Outer link border (dark grey)
-      const outer = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      outer.setAttribute("x", "-11");
-      outer.setAttribute("y", "-5.5");
-      outer.setAttribute("width", "22");
-      outer.setAttribute("height", "11");
-      outer.setAttribute("rx", "5.5");
-      outer.setAttribute("fill", "#2D2B28");
-      outer.setAttribute("stroke", "#4A4742");
-      outer.setAttribute("stroke-width", "1");
+      const capsule = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      capsule.setAttribute("x", "-4");
+      capsule.setAttribute("y", "-20");
+      capsule.setAttribute("width", "8");
+      capsule.setAttribute("height", "40");
+      capsule.setAttribute("rx", "4");
+      capsule.setAttribute("fill", "url(#chain-metal-grad)");
+      capsule.setAttribute("stroke", "#222222");
+      capsule.setAttribute("stroke-width", "1");
 
-      // Highlight inner ridge (lighter grey highlight)
-      const highlight = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      highlight.setAttribute("x", "-9");
-      highlight.setAttribute("y", "-4");
-      highlight.setAttribute("width", "18");
-      highlight.setAttribute("height", "8");
-      highlight.setAttribute("rx", "4");
-      highlight.setAttribute("fill", "#8E887E");
+      const edgeHighlight = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      edgeHighlight.setAttribute("x1", "-1");
+      edgeHighlight.setAttribute("y1", "-16");
+      edgeHighlight.setAttribute("x2", "-1");
+      edgeHighlight.setAttribute("y2", "16");
+      edgeHighlight.setAttribute("stroke", "rgba(255,255,255,0.75)");
+      edgeHighlight.setAttribute("stroke-width", "1");
 
-      // Inner hollow cutout
-      const inner = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      inner.setAttribute("x", "-6");
-      inner.setAttribute("y", "-2");
-      inner.setAttribute("width", "12");
-      inner.setAttribute("height", "4");
-      inner.setAttribute("rx", "2");
-      inner.setAttribute("fill", "#242220");
-
-      linkG.appendChild(outer);
-      linkG.appendChild(highlight);
-      linkG.appendChild(inner);
+      edgeG.appendChild(capsule);
+      edgeG.appendChild(edgeHighlight);
+      unitG.appendChild(edgeG);
     } else {
-      // 90-degree rotated link (seen edge-on / through-the-ring)
-      linkG.setAttribute("transform", `translate(${px}, ${py}) rotate(${angleDeg + 90})`);
+      // ODD: FACE-ON hollow ring (26px wide by 44px long, stroke ~6px, see-through middle)
+      // Rendered with two interlocking layers (back half and front half)
+      const ringG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      ringG.setAttribute("transform", `translate(${pt.x}, ${pt.y}) rotate(${angleDeg})`);
 
-      const edgeOuter = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      edgeOuter.setAttribute("x", "-4");
-      edgeOuter.setAttribute("y", "-7");
-      edgeOuter.setAttribute("width", "8");
-      edgeOuter.setAttribute("height", "14");
-      edgeOuter.setAttribute("rx", "4");
-      edgeOuter.setAttribute("fill", "#383632");
-      edgeOuter.setAttribute("stroke", "#5A5650");
-      edgeOuter.setAttribute("stroke-width", "1");
+      function createRingShape(clipId) {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        if (clipId) g.setAttribute("clip-path", `url(#${clipId})`);
 
-      const edgeHighlight = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      edgeHighlight.setAttribute("x", "-2");
-      edgeHighlight.setAttribute("y", "-5");
-      edgeHighlight.setAttribute("width", "4");
-      edgeHighlight.setAttribute("height", "10");
-      edgeHighlight.setAttribute("rx", "2");
-      edgeHighlight.setAttribute("fill", "#A6A094");
+        // Outer oval stroke (6px thick metal ring)
+        const outer = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        outer.setAttribute("x", "-13");
+        outer.setAttribute("y", "-22");
+        outer.setAttribute("width", "26");
+        outer.setAttribute("height", "44");
+        outer.setAttribute("rx", "13");
+        outer.setAttribute("fill", "none");
+        outer.setAttribute("stroke", "url(#chain-metal-grad)");
+        outer.setAttribute("stroke-width", "6");
 
-      linkG.appendChild(edgeOuter);
-      linkG.appendChild(edgeHighlight);
+        // Thin dark borders
+        const darkOuter = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        darkOuter.setAttribute("x", "-13");
+        darkOuter.setAttribute("y", "-22");
+        darkOuter.setAttribute("width", "26");
+        darkOuter.setAttribute("height", "44");
+        darkOuter.setAttribute("rx", "13");
+        darkOuter.setAttribute("fill", "none");
+        darkOuter.setAttribute("stroke", "#222222");
+        darkOuter.setAttribute("stroke-width", "1");
+
+        const darkInner = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        darkInner.setAttribute("x", "-7");
+        darkInner.setAttribute("y", "-16");
+        darkInner.setAttribute("width", "14");
+        darkInner.setAttribute("height", "32");
+        darkInner.setAttribute("rx", "7");
+        darkInner.setAttribute("fill", "none");
+        darkInner.setAttribute("stroke", "#222222");
+        darkInner.setAttribute("stroke-width", "1");
+
+        // Top edge white highlight line
+        const ringHighlight = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        ringHighlight.setAttribute("d", "M -8 -19 Q 0 -22 8 -19");
+        ringHighlight.setAttribute("fill", "none");
+        ringHighlight.setAttribute("stroke", "rgba(255,255,255,0.8)");
+        ringHighlight.setAttribute("stroke-width", "1.2");
+
+        g.appendChild(outer);
+        g.appendChild(darkOuter);
+        g.appendChild(darkInner);
+        g.appendChild(ringHighlight);
+        return g;
+      }
+
+      // Back half sits behind, front half sits in front for true over-under interlocking
+      ringG.appendChild(createRingShape(`clip-back-${chainIndex}`));
+      ringG.appendChild(createRingShape(`clip-front-${chainIndex}`));
+      unitG.appendChild(ringG);
     }
 
-    chainGroup.appendChild(linkG);
-    linkElements.push(linkG);
+    chainGroup.appendChild(unitG);
+    linkUnits.push(unitG);
   }
 
+  // FIX B.6: Small 10px round metal anchors where chain meets each card
+  function createAnchor(cx, cy) {
+    const anchorG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    anchorG.innerHTML = `
+      <circle cx="${cx}" cy="${cy}" r="5" fill="#252422" stroke="#111111" stroke-width="1.5"/>
+      <circle cx="${cx - 1}" cy="${cy - 1}" r="2" fill="#88857F"/>
+    `;
+    return anchorG;
+  }
+
+  chainGroup.appendChild(createAnchor(x1, y1));
+  chainGroup.appendChild(createAnchor(x2, y2));
+
   svgLayer.appendChild(chainGroup);
-  return { group: chainGroup, links: linkElements };
+  return { group: chainGroup, linkUnits };
 }
 
 /**
- * Section 4: Remaining body entrance animation
+ * Section 4: Remaining body entrance animation (0.1s delay between statement and paragraph)
  */
 function setupStatementEntrance(prefersReducedMotion) {
   if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
@@ -567,7 +913,7 @@ function setupStatementEntrance(prefersReducedMotion) {
     }
   })
     .fromTo(title, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" })
-    .fromTo(text, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "-=0.7");
+    .fromTo(text, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "+=0.1");
 }
 
 /**
@@ -585,7 +931,6 @@ function setupContactForm() {
   const botTrap = document.getElementById("field-trap");
   const submitBtn = document.getElementById("form-submit-btn");
 
-  // Floating label active state management
   const inputs = [nameInput, emailInput, needSelect, messageInput];
   inputs.forEach((input) => {
     if (!input) return;
@@ -610,7 +955,6 @@ function setupContactForm() {
     checkActive();
   });
 
-  // Client-side validation helper
   function validateField(input, errorId, validatorFn, errorMessage) {
     const errorEl = document.getElementById(errorId);
     const isValid = validatorFn(input.value.trim());
@@ -633,7 +977,6 @@ function setupContactForm() {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    // Anti-bot honeypot check
     if (botTrap && botTrap.value.trim().length > 0) {
       console.warn("Spam submission prevented.");
       return;
@@ -664,9 +1007,7 @@ function setupContactForm() {
       return;
     }
 
-    // Submit state: disable button and show loading text
     submitBtn.disabled = true;
-    const btnOriginalHTML = submitBtn.innerHTML;
     submitBtn.innerHTML = 'Sending... <span aria-hidden="true">&rarr;</span>';
 
     const formData = {
@@ -676,10 +1017,8 @@ function setupContactForm() {
       message: messageInput.value.trim()
     };
 
-    // Call submitForm function where backend endpoint can be plugged in
     submitForm(formData);
 
-    // Simulate clean network dispatch and reveal success state
     setTimeout(() => {
       form.style.display = "none";
       if (successState) {
