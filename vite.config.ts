@@ -24,6 +24,8 @@ export default defineConfig(() => {
           main: path.resolve('index.html'),
           project: path.resolve('project.html'),
           notfound: path.resolve('404.html'),
+          writing: path.resolve('writing.html'),
+          postWelcome: path.resolve('posts/welcome-to-the-site.html'),
         },
       },
     },

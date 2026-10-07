@@ -1,0 +1,196 @@
+/* ==========================================================================
+   Static Post Page Styling (posts.css)
+   Clean, typographic reading experience following all design constraints.
+   No pills, no eyebrows, no badges, no icons in circles, no emojis.
+   ========================================================================== */
+
+.post-main {
+  min-height: calc(100vh - 400px);
+  padding: 160px 48px 120px;
+}
+
+.post-container {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Post Header */
+.post-header {
+  margin-bottom: 56px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 40px;
+}
+
+.post-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+  opacity: 0.7;
+  margin-bottom: 32px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.post-back-link:hover,
+.post-back-link:focus-visible {
+  opacity: 1;
+  transform: translateX(-4px);
+}
+
+.post-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  margin-bottom: 24px;
+}
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+  opacity: 0.6;
+}
+
+.post-date {
+  font-feature-settings: "tnum";
+}
+
+/* Post Body Typography */
+.post-body {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: var(--ink);
+}
+
+.post-body p {
+  margin-bottom: 28px;
+}
+
+.post-body h2 {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin-top: 56px;
+  margin-bottom: 20px;
+  color: var(--ink);
+}
+
+.post-body h3 {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 40px;
+  margin-bottom: 16px;
+  color: var(--ink);
+}
+
+.post-body blockquote {
+  border-left: 3px solid var(--sage);
+  padding: 12px 0 12px 28px;
+  margin: 36px 0;
+  font-style: italic;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  color: var(--ink);
+  opacity: 0.9;
+}
+
+.post-body pre {
+  background-color: var(--ink);
+  color: var(--cream);
+  padding: 24px 28px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 36px 0;
+}
+
+.post-body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9em;
+}
+
+.post-body p code {
+  background-color: var(--bg-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.post-body ul,
+.post-body ol {
+  margin: 24px 0 32px 28px;
+  padding: 0;
+}
+
+.post-body li {
+  margin-bottom: 12px;
+}
+
+.post-body a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  transition: opacity 0.2s ease;
+}
+
+.post-body a:hover {
+  opacity: 0.7;
+}
+
+/* Post Footer / Navigation */
+.post-footer-nav {
+  margin-top: 72px;
+  padding-top: 40px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.post-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink);
+  transition: opacity 0.2s ease;
+}
+
+.post-footer-link:hover,
+.post-footer-link:focus-visible {
+  opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .post-main {
+    padding: 120px 24px 80px;
+  }
+
+  .post-body {
+    font-size: 1.05rem;
+    line-height: 1.7;
+  }
+
+  .post-body pre {
+    padding: 16px 20px;
+  }
+}

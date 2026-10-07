@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to the site — Your Name</title>
+  <meta name="description" content="A short placeholder sentence about this post.">
+
+  <!-- Google Fonts: Space Grotesk & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Core, Shared & Post Stylesheets -->
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../posts.css">
+
+  <!-- GSAP for shared footer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+</head>
+<body class="page-post">
+
+  <!-- Shared Nav Fixed at Top -->
+  <header class="site-header">
+    <nav class="nav" aria-label="Primary navigation">
+      <a href="../index.html#hero" class="nav__logo">Your Name</a>
+      <ul class="nav__list">
+        <li><a href="../index.html#work" class="nav__link">Work</a></li>
+        <li><a href="../404.html" class="nav__link">Design</a></li>
+        <li><a href="../writing.html" class="nav__link is-active" aria-current="page">Writing</a></li>
+        <li><a href="../404.html" class="nav__link">About</a></li>
+        <li><a href="../index.html#contact" class="nav__link">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Post Content -->
+  <main class="post-main">
+    <article class="post-container">
+      <header class="post-header">
+        <a href="../writing.html" class="post-back-link">
+          <span aria-hidden="true">&larr;</span> Back to Writing
+        </a>
+        <h1 class="post-title">Welcome to the site</h1>
+        <div class="post-meta">
+          <time class="post-date" datetime="2026-10-07">October 7, 2026</time>
+        </div>
+      </header>
+
+      <div class="post-body">
+        <p>This is a first post on the new site. The intention here is simple: to document processes, reflect on craft, and write about building physical and digital software systems with rigorous attention to detail.</p>
+
+        <h2>Intentional Architecture</h2>
+        <p>A good digital experience is built upon structural clarity rather than ornamental excess. When layouts are clear and performance is immediate, the user feels respected and unburdened.</p>
+
+        <blockquote>
+          Good architecture feels inevitable in retrospect.
+        </blockquote>
+
+        <p>We believe in building tools where interaction feels tactile and direct. Code and structure should mirror one another:</p>
+
+        <pre><code>function init() {
+  console.log("Ready.");
+}</code></pre>
+
+        <p>More thoughts and field notes will be published here regularly.</p>
+      </div>
+
+      <footer class="post-footer-nav">
+        <a href="../writing.html" class="post-footer-link">
+          <span aria-hidden="true">&larr;</span> All posts
+        </a>
+      </footer>
+    </article>
+  </main>
+
+  <!-- Shared Footer -->
+  <footer class="site-footer" id="contact">
+    <!-- Populated by shared.js buildFooter() -->
+  </footer>
+
+  <!-- Scripts -->
+  <script src="../content.js"></script>
+  <script src="../writings-data.js"></script>
+  <script src="../shared.js"></script>
+  <script src="../posts.js"></script>
+</body>
+</html>

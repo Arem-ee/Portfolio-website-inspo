@@ -1,0 +1,122 @@
+/* ==========================================================================
+   Writing Index Page Styling
+   ========================================================================== */
+
+.writing-main {
+  min-height: calc(100vh - 400px);
+  padding: 160px 48px 100px;
+}
+
+.writing-container {
+  max-width: var(--max-width, 1200px);
+  margin: 0 auto;
+}
+
+.writing-header {
+  margin-bottom: 72px;
+}
+
+.writing-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+
+.writing-intro {
+  font-size: clamp(1.1rem, 1.8vw, 1.25rem);
+  color: var(--ink);
+  opacity: 0.8;
+  max-width: 580px;
+  line-height: 1.6;
+}
+
+/* Post List */
+.writing-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+
+.writing-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  align-items: baseline;
+  gap: 32px;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.25s ease, background-color 0.25s ease, padding 0.25s ease;
+}
+
+.writing-row:hover,
+.writing-row:focus-visible {
+  transform: translateX(8px);
+}
+
+.writing-row__date {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.writing-row__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.writing-row__title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  transition: color 0.2s ease;
+}
+
+.writing-row:hover .writing-row__title {
+  color: var(--ink);
+}
+
+.writing-row__summary {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink);
+  opacity: 0.75;
+  line-height: 1.5;
+}
+
+.writing-row__arrow {
+  font-size: 1.25rem;
+  color: var(--ink);
+  opacity: 0.4;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.writing-row:hover .writing-row__arrow {
+  transform: translateX(4px);
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .writing-main {
+    padding: 120px 24px 80px;
+  }
+
+  .writing-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 24px 0;
+  }
+
+  .writing-row__arrow {
+    display: none;
+  }
+}

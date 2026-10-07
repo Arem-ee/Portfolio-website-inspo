@@ -14,7 +14,7 @@ window.SITE = {
   navigation: [
     { label: "Work", href: "index.html#work" },
     { label: "Design", href: "404.html" },
-    { label: "Writing", href: "404.html" },
+    { label: "Writing", href: "/writing.html" },
     { label: "About", href: "404.html" },
     { label: "Contact", href: "index.html#contact" }
   ],

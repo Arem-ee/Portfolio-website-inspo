@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Writing — Your Name</title>
+  <meta name="description" content="Essays, articles, and field notes on design, engineering, and digital craft.">
+
+  <!-- Google Fonts: Space Grotesk & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Core, Shared & Writing Stylesheets -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="writing.css">
+
+  <!-- GSAP for shared footer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+</head>
+<body class="page-writing">
+
+  <!-- Shared Nav Fixed at Top -->
+  <header class="site-header">
+    <nav class="nav" aria-label="Primary navigation">
+      <a href="index.html#hero" class="nav__logo">Your Name</a>
+      <ul class="nav__list">
+        <li><a href="index.html#work" class="nav__link">Work</a></li>
+        <li><a href="404.html" class="nav__link">Design</a></li>
+        <li><a href="writing.html" class="nav__link is-active" aria-current="page">Writing</a></li>
+        <li><a href="404.html" class="nav__link">About</a></li>
+        <li><a href="index.html#contact" class="nav__link">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Writing Index Main Content -->
+  <main class="writing-main">
+    <div class="writing-container">
+      <header class="writing-header">
+        <h1 class="writing-title">Writing</h1>
+        <p class="writing-intro">Essays, observations, and notes on digital interfaces, tactile craft, and engineering discipline.</p>
+      </header>
+
+      <div class="writing-list" id="writing-list">
+        <!-- Rendered dynamically from writings-data.js -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Shared Footer -->
+  <footer class="site-footer" id="contact">
+    <!-- Populated by shared.js buildFooter() -->
+  </footer>
+
+  <!-- Scripts -->
+  <script src="content.js"></script>
+  <script src="writings-data.js"></script>
+  <script src="shared.js"></script>
+  <script src="writing.js"></script>
+</body>
+</html>
