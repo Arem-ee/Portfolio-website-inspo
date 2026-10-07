@@ -36,13 +36,15 @@ function initSharedNav() {
   const pathname = window.location.pathname.toLowerCase();
   const isIndexPage = pathname.endsWith("index.html") || pathname === "/" || pathname === "";
 
-  const navItems = [
-    { label: "Work", href: "index.html#work", id: "work" },
-    { label: "Design", href: "404.html", id: "design" },
-    { label: "Writing", href: "404.html", id: "writing" },
-    { label: "About", href: "404.html", id: "about" },
-    { label: "Contact", href: "index.html#contact", id: "contact" }
-  ];
+  const navItems = (SITE.navigation && SITE.navigation.length)
+    ? SITE.navigation.map(item => ({ ...item, id: item.label.toLowerCase() }))
+    : [
+        { label: "Work", href: "index.html#work", id: "work" },
+        { label: "Design", href: "404.html", id: "design" },
+        { label: "Writing", href: "/writing.html", id: "writing" },
+        { label: "About", href: "404.html", id: "about" },
+        { label: "Contact", href: "index.html#contact", id: "contact" }
+      ];
 
   navList.innerHTML = navItems
     .map((item) => {
@@ -130,7 +132,7 @@ function buildFooter(container) {
             <h4 class="footer-nav-title">Pages</h4>
             <ul class="footer-link-list" id="footer-pages-list">
               <li><a href="index.html#work" class="footer-link">Work</a></li>
-              <li><a href="404.html" class="footer-link">Writing</a></li>
+              <li><a href="/writing.html" class="footer-link">Writing</a></li>
               <li><a href="404.html" class="footer-link">About</a></li>
               <li><a href="#contact" class="footer-link">Contact</a></li>
             </ul>
