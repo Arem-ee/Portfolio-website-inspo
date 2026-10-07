@@ -41,12 +41,13 @@ html {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip; /* M0: Prevent any sideways scrolling */
 }
 
 body {
   background-color: var(--bg);
   color: var(--ink);
-  overflow-x: hidden;
+  overflow-x: clip; /* M0: Prevent any sideways scrolling */
   position: relative;
   min-height: 100vh;
 }
@@ -71,7 +72,7 @@ body {
 }
 
 /* ==========================================================================
-   NAVIGATION
+   NAVIGATION (DESKTOP)
    ========================================================================== */
 
 .site-header {
@@ -114,13 +115,15 @@ body {
   transition: color 0.2s ease;
 }
 
-.nav__link:hover {
-  color: var(--sage);
+/* Wrap hover states so nothing sticks on touch screens */
+@media (hover: hover) {
+  .nav__link:hover {
+    color: var(--sage);
+  }
 }
 
 /* ==========================================================================
-   SECTION 1: HERO SECTION
-   FIX A: STANDALONE CHARACTER, NO BACKGROUND, MUCH BIGGER (88svh)
+   SECTION 1: HERO SECTION (DESKTOP)
    ========================================================================== */
 
 .hero {
@@ -196,7 +199,6 @@ body {
   line-height: 1.5;
 }
 
-/* FIX A.5: Keep subtexts >= 32px away from character so no word is cut off */
 .hero__headline-col--left .hero__subtext {
   margin-left: 0;
   margin-right: 48px;
@@ -209,7 +211,6 @@ body {
   text-align: right;
 }
 
-/* FIX A.1 & A.3: Standalone character: 88svh, min 560px, max 980px, zero box */
 .hero__character-wrapper {
   position: absolute;
   top: 50%;
@@ -243,7 +244,6 @@ body {
   filter: none;
 }
 
-/* FIX A.4: Floor shadow positioned directly under the character's feet */
 .hero__shadow {
   position: absolute;
   bottom: -6px;
@@ -297,8 +297,7 @@ body {
 }
 
 /* ==========================================================================
-   SECTION 2: PROJECT CARDS (THE ZIGZAG)
-   FIX 3: ALL FIVE CARDS LOOK THE SAME WITH FLAT --SAGE AND IDENTICAL BORDER/SHADOW
+   SECTION 2 & 3: PROJECT CARDS (THE ZIGZAG) & CHAINS (DESKTOP)
    ========================================================================== */
 
 .projects-section {
@@ -307,13 +306,18 @@ body {
   padding: 120px 48px;
 }
 
-.projects-container {
+.projects-wrapper {
+  position: relative;
   max-width: var(--max-width);
   margin: 0 auto;
+}
+
+.projects-container {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 120px;
+  gap: 140px; /* Exact 140px vertical gap between neighbouring cards */
+  z-index: 2;
 }
 
 .project-row {
@@ -322,6 +326,7 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  z-index: 2;
 }
 
 .project-row--left {
@@ -342,11 +347,15 @@ body {
   box-shadow: var(--shadow-card);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
+  position: relative;
+  z-index: 2;
 }
 
-.project-card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-hover);
+@media (hover: hover) {
+  .project-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-hover);
+  }
 }
 
 .project-card__media {
@@ -366,8 +375,10 @@ body {
   border-radius: var(--radius);
 }
 
-.project-card:hover .project-card__img {
-  transform: scale(1.04);
+@media (hover: hover) {
+  .project-card:hover .project-card__img {
+    transform: scale(1.04);
+  }
 }
 
 .project-info {
@@ -376,6 +387,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  position: relative;
+  z-index: 2;
 }
 
 .project-info__title {
@@ -411,45 +424,45 @@ body {
   transition: color 0.2s ease;
 }
 
-.project-info__link:hover {
-  color: var(--sage);
-}
-
 .project-info__arrow {
   display: inline-block;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.project-row:hover .project-info__arrow,
-.project-info__link:hover .project-info__arrow {
-  transform: translateX(6px);
+@media (hover: hover) {
+  .project-info__link:hover {
+    color: var(--sage);
+  }
+
+  .project-row:hover .project-info__arrow,
+  .project-info__link:hover .project-info__arrow {
+    transform: translateX(6px);
+  }
 }
 
 /* ==========================================================================
-   SECTION 3: ANIMATED CHAINS (LAYER)
+   CHAINS LAYER (DESKTOP)
    ========================================================================== */
 
-.chains-layer {
+.chain {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  z-index: 1; /* Lower than cards (cards are z-index: 2) */
   pointer-events: none;
-  z-index: 10;
   overflow: visible;
 }
 
-.chain-svg-group {
+.chain__sway {
   will-change: transform;
+  overflow: visible;
 }
 
-.chain-link-unit {
-  will-change: transform, opacity;
+.chain__sway svg {
+  display: block;
+  overflow: visible;
 }
 
 /* ==========================================================================
-   SECTION 4: REMAINING BODY
+   SECTION 4: REMAINING BODY (DESKTOP)
    ========================================================================== */
 
 .statement-section {
@@ -482,30 +495,26 @@ body {
 }
 
 /* ==========================================================================
-   SECTION 5 & 6: BOTTOM SPLIT: FOOTER (LEFT) & CONTACT FORM (RIGHT)
+   SECTION 5 & 6: BOTTOM AREA (FOOTER & PAPER STACK - DESKTOP)
    ========================================================================== */
 
-.bottom-area {
-  display: grid;
-  grid-template-columns: 1fr 1px 1fr;
-  min-height: 640px;
-  position: relative;
-}
-
-.bottom-divider {
-  background-color: var(--line);
-  width: 1px;
-  height: 100%;
-}
-
-/* Left Half: Footer */
 .site-footer {
   background-color: var(--ink);
   color: var(--cream);
+  min-height: 760px;
   padding: 64px;
+  position: relative;
+  z-index: 1;
+  overflow: visible; /* Must not use overflow hidden */
+}
+
+/* Left side content stays at most 46% of width so paper never covers it */
+.footer-content {
+  max-width: 46%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-height: 632px;
 }
 
 .footer-top {
@@ -579,12 +588,14 @@ body {
   transition: width 0.2s ease;
 }
 
-.footer-link:hover {
-  color: var(--sage);
-}
+@media (hover: hover) {
+  .footer-link:hover {
+    color: var(--sage);
+  }
 
-.footer-link:hover::after {
-  width: 100%;
+  .footer-link:hover::after {
+    width: 100%;
+  }
 }
 
 .footer-bottom {
@@ -614,25 +625,94 @@ body {
   transition: color 0.2s ease;
 }
 
-.footer-back-top:hover {
-  color: var(--sage);
+@media (hover: hover) {
+  .footer-back-top:hover {
+    color: var(--sage);
+  }
 }
 
-/* Right Half: Contact Form (FIX 5: Strict 20px radius, no pill shapes) */
-.contact-section {
-  background-color: var(--cream);
-  padding: 64px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+/* ==========================================================================
+   PAPER STACK (DESKTOP)
+   ========================================================================== */
+
+.paper-stack {
+  position: absolute;
+  right: 6%;
+  top: -96px; /* Sticks out over the section above */
+  width: min(560px, 46%);
+  z-index: 2;
+  will-change: transform, opacity;
 }
 
-.contact-form-wrapper {
-  max-width: 520px;
+/* Common Sheet Styling (Corner radius 2px is the only exception to 20px rule) */
+.paper-sheet {
+  border-radius: 2px;
+  padding: 48px;
+  position: relative;
+  background-color: #f6f1e7;
+  color: var(--ink);
+  /* Paper grain noise + soft lighting linear-gradient(165deg, rgba(255,255,255,.55), rgba(0,0,0,.035)) */
+  background-image: 
+    linear-gradient(165deg, rgba(255, 255, 255, 0.55), rgba(0, 0, 0, 0.035)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  background-blend-mode: multiply;
+  /* Layered shadow & thin lit edge */
+  box-shadow: 
+    0 1px 1px rgba(0, 0, 0, 0.3), 
+    0 8px 14px -4px rgba(0, 0, 0, 0.3), 
+    0 30px 60px -18px rgba(0, 0, 0, 0.55), 
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+/* Back sheet: empty, rotated -2.4deg, shifted 12px down and 10px left */
+.paper--back {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
+  height: 100%;
+  background-color: #ece5d6;
+  transform: translate(-10px, 12px) rotate(-2.4deg);
+  z-index: 1;
+  pointer-events: none;
 }
 
+/* Front sheet: rotated 1.2deg with lifted bottom corners */
+.paper--front {
+  position: relative;
+  background-color: #f6f1e7;
+  transform: rotate(1.2deg);
+  z-index: 2;
+}
+
+/* Lifted bottom corners: two pseudo-elements behind sheet (z-index -1, 14px tall, rotate -3deg & 3deg) */
+.paper--front::before,
+.paper--front::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  width: 44%;
+  height: 14px;
+  box-shadow: 0 18px 12px rgba(0, 0, 0, 0.45);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.paper--front::before {
+  left: 10px;
+  transform: rotate(-3deg);
+}
+
+.paper--front::after {
+  right: 10px;
+  left: auto;
+  transform: rotate(3deg);
+}
+
+/* Form layout inside the paper sheet */
 .contact-form {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -655,7 +735,7 @@ body {
   width: 100%;
   background-color: transparent;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius); /* Strict 20px radius preserved */
   padding: 20px 20px 8px 20px;
   font-family: var(--font-body);
   font-size: 1rem;
@@ -688,7 +768,7 @@ body {
 .form-textarea:focus {
   outline: none;
   border-color: var(--sage);
-  box-shadow: 0 0 0 3px rgba(155, 170, 151, 0.28);
+  box-shadow: 0 0 0 3px rgba(155, 170, 151, 0.28); /* Sage focus glow */
 }
 
 .form-input:focus ~ .floating-label,
@@ -723,7 +803,7 @@ body {
   display: block;
 }
 
-/* FIX 5: Exactly 20px corner radius, full width submit button in --sage */
+/* Full width submit button in --sage with 20px radius */
 .form-submit-btn {
   width: 100%;
   background-color: var(--sage);
@@ -742,10 +822,12 @@ body {
   transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-submit-btn:hover:not(:disabled) {
-  opacity: 0.94;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(155, 170, 151, 0.4);
+@media (hover: hover) {
+  .form-submit-btn:hover:not(:disabled) {
+    opacity: 0.94;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(155, 170, 151, 0.4);
+  }
 }
 
 .form-submit-btn:disabled {
@@ -758,6 +840,8 @@ body {
   flex-direction: column;
   align-items: flex-start;
   gap: 16px;
+  position: relative;
+  z-index: 1;
 }
 
 .form-success-state.is-visible {
@@ -809,106 +893,410 @@ body {
 }
 
 /* ==========================================================================
-   SECTION 7: RESPONSIVE & MOBILE BEHAVIOR (UNDER 900PX)
+   MOBILE & TABLET RULES (@media (max-width: 899px))
+   All mobile styles consolidated here. Desktop (900px+) remains untouched.
    ========================================================================== */
 
-@media (max-width: 900px) {
+@media (max-width: 899px) {
+  :root {
+    --page-padding: 20px;
+    --gutter: clamp(40px, 9vw, 72px);
+  }
+
+  @media (min-width: 600px) {
+    :root {
+      --page-padding: 32px;
+    }
+  }
+
+  /* M1: Mobile Navigation */
   .site-header {
-    padding: 24px 20px;
+    padding: 20px var(--page-padding);
+  }
+
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .nav__logo {
+    font-size: 1.0625rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
 
   .nav__list {
-    gap: 20px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: nowrap;
   }
 
+  .nav__link {
+    font-size: 13px;
+    line-height: 1;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  /* M1: Mobile Hero */
   .hero {
-    height: auto;
     min-height: 100svh;
-    padding: 110px 20px 60px;
+    height: auto;
+    padding: 96px var(--page-padding) 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: visible;
+  }
+
+  .hero__glow {
+    width: 90vw;
+    height: 90vw;
   }
 
   .hero__container {
-    flex-direction: column;
-    justify-content: center;
-    gap: 28px;
-  }
-
-  .hero__headline-col--left,
-  .hero__headline-col--right {
-    text-align: center;
-    padding: 0;
-  }
-
-  /* FIX A.3: On screens under 900px, character height is 62svh */
-  .hero__character-wrapper {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
     position: relative;
-    top: auto;
-    left: auto;
-    transform: none;
-    height: 62svh;
-    min-height: 380px;
-    max-height: 600px;
-    margin: 20px auto;
+    z-index: 1; /* Headline is behind character (character is z-index: 2) */
+    pointer-events: none;
+    row-gap: 8px;
   }
 
-  .hero__subtext {
-    margin: 12px auto 0 !important;
-    text-align: center !important;
+  .hero__headline-col {
+    display: contents;
   }
 
+  #hero-title-left {
+    order: 1;
+    text-align: left;
+    font-size: clamp(64px, 22vw, 120px);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+  }
+
+  #hero-title-right {
+    order: 2;
+    text-align: right;
+    font-size: clamp(64px, 22vw, 120px);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    margin-bottom: 28svh; /* Allows space for character body while subtexts sit beneath */
+  }
+
+  /* Character: centred, height 56svh, width auto, max-width 80vw */
+  .hero__character-wrapper {
+    position: absolute;
+    top: calc(50% - 16px);
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 56svh;
+    max-height: none;
+    min-height: 0;
+    width: auto;
+    max-width: 80vw;
+    z-index: 2; /* Character is above headline */
+    margin: 0;
+    pointer-events: none;
+  }
+
+  .hero__character-img {
+    height: 100%;
+    width: auto;
+    max-width: 80vw;
+    object-fit: contain;
+  }
+
+  .hero__shadow {
+    width: 160px;
+    height: 18px;
+    bottom: -6px;
+  }
+
+  /* Two small text lines under character */
+  #hero-subtext-left {
+    order: 3;
+    text-align: left;
+    font-size: 14px;
+    max-width: 60%;
+    margin-right: auto;
+    margin-left: 0;
+    line-height: 1.5;
+    opacity: 0.8;
+    pointer-events: auto;
+  }
+
+  #hero-subtext-right {
+    order: 4;
+    text-align: right;
+    font-size: 14px;
+    max-width: 60%;
+    margin-left: auto;
+    margin-right: 0;
+    line-height: 1.5;
+    opacity: 0.8;
+    pointer-events: auto;
+    margin-top: 8px;
+  }
+
+  .hero__scroll-hint {
+    bottom: 16px;
+  }
+
+  /* M2: Project Cards (Mobile) */
   .projects-section {
-    padding: 80px 20px;
+    padding: 80px var(--page-padding);
   }
 
   .projects-container {
-    gap: 80px;
+    gap: 56px; /* 56px gap under the text block to the next card */
   }
 
   .project-row {
     flex-direction: column !important;
-    gap: 24px;
-    align-items: stretch;
-  }
-
-  .project-row--left .project-card {
-    transform: translateX(-16px);
-  }
-
-  .project-row--right .project-card {
-    transform: translateX(16px);
+    width: 100%;
   }
 
   .project-card {
-    width: calc(100% - 16px) !important;
+    width: calc(100% - var(--gutter)) !important;
     flex: 0 0 auto !important;
+    position: relative;
+    z-index: 2 !important; /* Cards are z-index: 2 */
   }
 
+  /* Odd items (1, 3, 5): align left, free gutter on right */
+  .project-row--left {
+    align-items: flex-start !important;
+  }
+
+  .project-row--left .project-card {
+    margin-right: auto;
+    margin-left: 0;
+    transform: none !important;
+  }
+
+  /* Even items (2, 4): align right, free gutter on left */
+  .project-row--right {
+    align-items: flex-end !important;
+  }
+
+  .project-row--right .project-card {
+    margin-left: auto;
+    margin-right: 0;
+    transform: none !important;
+  }
+
+  /* Text blocks under card: width is card width minus 48px */
   .project-info {
-    width: 100% !important;
-    flex: 0 0 100% !important;
+    margin-top: 20px;
+    width: calc(100% - var(--gutter) - 48px) !important;
+    flex: 0 0 auto !important;
+    position: relative;
+    z-index: 1 !important; /* Text is z-index: 1 */
   }
 
+  .project-row--left .project-info {
+    margin-right: auto;
+    margin-left: 0;
+    padding-right: 48px;
+    text-align: left;
+  }
+
+  .project-row--right .project-info {
+    margin-left: auto;
+    margin-right: 0;
+    padding-left: 48px;
+    text-align: right;
+  }
+
+  .project-info__title {
+    font-size: clamp(1.4rem, 5vw, 1.75rem);
+    line-height: 1.2;
+  }
+
+  .project-info__desc {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .project-info__link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+  }
+
+  /* M3: Chains Mobile (z-index: 0, order back-to-front: chain 0, text 1, cards 2) */
+  .chain {
+    z-index: 0 !important;
+  }
+
+  /* M4: Remaining Body */
   .statement-section {
-    padding: 100px 20px;
+    padding: 96px var(--page-padding) !important;
   }
 
-  .bottom-area {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
+  .statement-title {
+    font-size: clamp(28px, 8vw, 40px) !important;
+    text-align: left !important;
+    line-height: 1.15;
+    max-width: 100% !important;
   }
 
-  .bottom-divider {
-    width: 100%;
-    height: 1px;
+  .statement-text {
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+    max-width: 100% !important;
+    margin-top: 24px;
   }
 
-  .site-footer,
-  .contact-section {
-    padding: 48px 20px;
+  /* M5: Footer & Paper Form */
+  .site-footer {
+    min-height: auto;
+    padding: 64px var(--page-padding) 40px !important;
+    background-color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    overflow: visible !important; /* Never overflow hidden */
+  }
+
+  .paper-stack {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    width: calc(100% - 32px) !important;
+    margin: -56px auto 32px !important; /* Overlaps footer's top edge */
+    z-index: 2 !important;
+    order: -1; /* Paper stack sits above footer content */
+  }
+
+  .paper-sheet {
+    padding: 28px 20px !important;
+  }
+
+  .paper--front {
+    transform: rotate(0.6deg) !important;
+  }
+
+  .paper--back {
+    transform: translate(-4px, 8px) rotate(-1.2deg) !important;
+  }
+
+  .paper--front::before,
+  .paper--front::after {
+    bottom: 6px;
+    height: 12px;
+  }
+
+  .contact-form {
+    gap: 16px;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    padding: 18px 16px 6px 16px !important;
+  }
+
+  .form-textarea {
+    min-height: 110px !important;
+    padding-top: 22px !important;
+  }
+
+  .floating-label {
+    font-size: 14px;
+    top: 14px;
+    left: 16px;
+  }
+
+  .form-input:focus ~ .floating-label,
+  .form-input:not(:placeholder-shown) ~ .floating-label,
+  .form-textarea:focus ~ .floating-label,
+  .form-textarea:not(:placeholder-shown) ~ .floating-label,
+  .floating-group.is-active .floating-label {
+    transform: translateY(-7px);
+    font-size: 11px;
+  }
+
+  .form-submit-btn {
+    width: 100% !important;
+    min-height: 52px !important;
+    font-size: 16px !important;
+    padding: 16px 20px !important;
+  }
+
+  /* Footer Content below paper */
+  .footer-content {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: auto !important;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+
+  .footer-top {
+    gap: 16px;
+  }
+
+  .footer-logo {
+    text-align: left;
+  }
+
+  .footer-sentence {
+    text-align: left;
+    max-width: 100%;
+    font-size: 14px;
   }
 
   .footer-links-grid {
-    gap: 40px;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+    margin-top: 24px !important;
+  }
+
+  .footer-link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+  }
+
+  .footer-bottom {
+    border-top: 1px solid rgba(243, 236, 225, 0.15) !important;
+    margin-top: 32px !important;
+    padding-top: 24px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+
+  .footer-copyright {
+    text-align: left;
+    font-size: 14px;
+  }
+
+  .footer-back-top {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    text-align: left;
   }
 }
 
@@ -926,13 +1314,9 @@ body {
 
   .hero__character-wrapper,
   .hero__shadow,
-  .chain-svg-group {
+  .chain__sway,
+  .paper-stack {
     animation: none !important;
-    transform: none !important;
-  }
-
-  .chain-link-unit {
-    opacity: 1 !important;
     transform: none !important;
   }
 }

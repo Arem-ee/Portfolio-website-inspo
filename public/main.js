@@ -5,6 +5,12 @@
  */
 
 /**
+ * FIX 2.A: Link drawing scale constant
+ * Every link is drawn at this scale so a wide link ends up ~20px wide and ~32px long.
+ */
+const LINK_SCALE = 0.5;
+
+/**
  * FIX 6: Global Site Content with Neutral Placeholders
  * Modify this object to change any textual content across the entire page.
  */
@@ -116,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
   populateSiteContent();
   setupScrollProgress();
 
-  // FIX A.2: Execute background-removal fallback on character before reveal animation
+  // Hero background-removal fallback on character before reveal animation
   const characterImg = document.querySelector(".hero__character-img");
   prepareCharacterImage(characterImg, () => {
     setupHeroInteractions(prefersReducedMotion);
@@ -125,12 +131,13 @@ document.addEventListener("DOMContentLoaded", () => {
   setupProjectEntrance(prefersReducedMotion);
   setupChains(prefersReducedMotion);
   setupStatementEntrance(prefersReducedMotion);
+  setupPaperAnimation(prefersReducedMotion);
   setupContactForm();
   setupSmoothScroll();
 });
 
 /**
- * FIX A.2: Automatic background-removal fallback
+ * Automatic background-removal fallback
  * Draws character onto canvas, averages 4 corners, flood-fills background to transparent,
  * softens halo edges, and removes baked-in floor shadow under feet.
  */
@@ -468,66 +475,55 @@ function setupProjectEntrance(prefersReducedMotion) {
 }
 
 /**
- * FIX B: REAL, CLEARLY READABLE METAL CHAINS
- * Builds exactly 4 hanging chains with 26x44px alternating face-on and edge-on links,
- * true over-under interlocking via clipPath, SVG metal gradient, and end anchors.
+ * Helper to compute an element's offset geometry relative to an ancestor wrapper.
+ * Traverses offsetParent without getBoundingClientRect to remain completely unaffected by transforms.
  */
-let chainInstances = [];
+function getOffsetRectRelativeTo(el, wrapper) {
+  let left = 0;
+  let top = 0;
+  let curr = el;
+  while (curr && curr !== wrapper) {
+    left += curr.offsetLeft;
+    top += curr.offsetTop;
+    curr = curr.offsetParent;
+  }
+  const width = el.offsetWidth;
+  const height = el.offsetHeight;
+  return {
+    left,
+    top,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height
+  };
+}
+
+/**
+ * FIX 2: CHAINS REBUILD
+ * Completely rewritten: no anchor dots, no circles, no clipPaths, no curved paths.
+ * Builds exactly 4 straight fine chains between neighboring cards inside .projects-wrapper.
+ */
+let activeChainTweens = [];
+let activeChainTriggers = [];
 
 function setupChains(prefersReducedMotion) {
-  const container = document.getElementById("projects-section");
-  const svgLayer = document.getElementById("chains-layer");
-  if (!container || !svgLayer) return;
+  const wrapper = document.getElementById("projects-wrapper");
+  if (!wrapper) return;
 
   function constructAllChains() {
-    chainInstances.forEach((inst) => {
-      if (inst.trigger) inst.trigger.kill();
-      if (inst.swayTween) inst.swayTween.kill();
-    });
-    chainInstances = [];
-    svgLayer.innerHTML = "";
+    // Kill previous GSAP animations and remove previous chain DOM elements
+    activeChainTweens.forEach((t) => t.kill());
+    activeChainTriggers.forEach((tr) => tr.kill());
+    activeChainTweens = [];
+    activeChainTriggers = [];
 
-    // Inject Shared SVG Definitions (linearGradient, dropShadow, clipPaths)
-    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    wrapper.querySelectorAll(".chain").forEach((el) => el.remove());
 
-    // Metal Linear Gradient
-    const metalGrad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
-    metalGrad.setAttribute("id", "chain-metal-grad");
-    metalGrad.setAttribute("x1", "0%");
-    metalGrad.setAttribute("y1", "0%");
-    metalGrad.setAttribute("x2", "0%");
-    metalGrad.setAttribute("y2", "100%");
-    metalGrad.innerHTML = `
-      <stop offset="0%" stop-color="#4A4A4A"/>
-      <stop offset="35%" stop-color="#C2C2C2"/>
-      <stop offset="70%" stop-color="#808080"/>
-      <stop offset="100%" stop-color="#555555"/>
-    `;
-    defs.appendChild(metalGrad);
-
-    // Filter for soft 2px drop shadow
-    const filter = document.createElementNS("http://www.w3.org/2000/svg", "filter");
-    filter.setAttribute("id", "chain-shadow");
-    filter.setAttribute("x", "-20%");
-    filter.setAttribute("y", "-20%");
-    filter.setAttribute("width", "140%");
-    filter.setAttribute("height", "140%");
-    filter.innerHTML = `<feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#1A1918" flood-opacity="0.28"/>`;
-    defs.appendChild(filter);
-
-    svgLayer.appendChild(defs);
-
-    const rows = Array.from(document.querySelectorAll(".project-row"));
+    const rows = Array.from(wrapper.querySelectorAll(".project-row"));
     if (rows.length < 2) return;
 
-    const containerRect = container.getBoundingClientRect();
-    const isMobile = window.innerWidth <= 900;
-
-    svgLayer.setAttribute("width", `${containerRect.width}`);
-    svgLayer.setAttribute("height", `${containerRect.height}`);
-    svgLayer.setAttribute("viewBox", `0 0 ${containerRect.width} ${containerRect.height}`);
-
-    // Build exactly 4 chains connecting the 5 neighboring cards
+    // Connect Card i to Card i+1 (exactly 4 chains for 5 cards)
     for (let i = 0; i < rows.length - 1; i++) {
       const upperRow = rows[i];
       const lowerRow = rows[i + 1];
@@ -536,94 +532,165 @@ function setupChains(prefersReducedMotion) {
 
       if (!upperCard || !lowerCard) continue;
 
-      const upperRect = upperCard.getBoundingClientRect();
-      const lowerRect = lowerCard.getBoundingClientRect();
+      const upper = getOffsetRectRelativeTo(upperCard, wrapper);
+      const lower = getOffsetRectRelativeTo(lowerCard, wrapper);
 
-      let x1, y1, x2, y2;
+      const upperIsLeft = upperRow.classList.contains("project-row--left");
+      const lowerIsRight = lowerRow.classList.contains("project-row--right");
 
-      if (isMobile) {
-        // Vertical chain under 900px
-        x1 = upperRect.left + upperRect.width / 2 - containerRect.left;
-        y1 = upperRect.bottom - containerRect.top;
-        x2 = lowerRect.left + lowerRect.width / 2 - containerRect.left;
-        y2 = lowerRect.top - containerRect.top;
-      } else {
-        // Desktop: bottom corner of upper card facing page centre to top edge of lower card
-        const upperIsLeft = upperRow.classList.contains("project-row--left");
-        if (upperIsLeft) {
-          x1 = upperRect.right - containerRect.left;
-          y1 = upperRect.bottom - containerRect.top;
-          // Arrives near top-left of lower card
-          x2 = lowerRect.left + 54 - containerRect.left;
-          y2 = lowerRect.top - containerRect.top;
-        } else {
-          x1 = upperRect.left - containerRect.left;
-          y1 = upperRect.bottom - containerRect.top;
-          // Arrives near top-right of lower card
-          x2 = lowerRect.right - 54 - containerRect.left;
-          y2 = lowerRect.top - containerRect.top;
-        }
+      // Compute Start Point S and End Point E
+      const S = {
+        x: upperIsLeft ? upper.right - 28 : upper.left + 28,
+        y: upper.bottom - 8
+      };
+
+      const E = {
+        x: lowerIsRight ? lower.left + 56 : lower.right - 56,
+        y: lower.top + 8
+      };
+
+      const dx = E.x - S.x;
+      const dy = E.y - S.y;
+      const L = Math.hypot(dx, dy);
+      const angle = -Math.atan2(dx, dy) * (180 / Math.PI);
+
+      // Create chain div
+      const chainDiv = document.createElement("div");
+      chainDiv.className = "chain";
+      chainDiv.style.position = "absolute";
+      chainDiv.style.left = `${S.x - 20}px`;
+      chainDiv.style.top = `${S.y}px`;
+      chainDiv.style.width = "40px";
+      chainDiv.style.height = `${L}px`;
+      chainDiv.style.transformOrigin = "20px 0";
+      chainDiv.style.transform = `rotate(${angle}deg)`;
+      chainDiv.style.overflow = "visible";
+      chainDiv.style.pointerEvents = "none";
+      chainDiv.style.zIndex = "1"; // Lower than cards (cards are z-index: 2)
+
+      // Inner sway container
+      const swayDiv = document.createElement("div");
+      swayDiv.className = "chain__sway";
+      swayDiv.style.transformOrigin = "20px 0";
+      swayDiv.style.width = "40px";
+      swayDiv.style.height = `${L}px`;
+
+      // SVG holding straight chain links
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", "40");
+      svg.setAttribute("height", `${L}`);
+      svg.setAttribute("viewBox", `0 0 40 ${L}`);
+      svg.style.overflow = "visible";
+
+      const n = Math.ceil(L / 20) + 1;
+      const pitch = L / (n - 1);
+
+      const linkElements = [];
+      for (let j = 0; j < n; j++) {
+        const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.setAttribute("href", j % 2 === 0 ? "#link-wide" : "#link-narrow");
+        use.setAttribute("transform", `translate(20 ${j * pitch}) scale(${LINK_SCALE})`);
+        svg.appendChild(use);
+        linkElements.push(use);
       }
 
-      const chainData = createInterlockingChain(svgLayer, defs, x1, y1, x2, y2, i);
+      swayDiv.appendChild(svg);
+      chainDiv.appendChild(swayDiv);
+      wrapper.appendChild(chainDiv);
 
       if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-        chainData.linkUnits.forEach((u) => {
-          u.style.opacity = "1";
-          u.style.transform = "none";
+        linkElements.forEach((el) => {
+          el.style.opacity = "1";
+          el.style.transform = `translate(20px, ${linkElements.indexOf(el) * pitch}px) scale(${LINK_SCALE})`;
         });
         continue;
       }
 
-      // FIX B.7 & B.8: Chain fully completes before user scrolls past it (top 95% to top 55%)
-      let hasTugged = false;
+      // Chain animation timeline (Build, Tug, Sway)
+      let tugged = false;
+      let swayTween = null;
+
+      function startSway() {
+        if (swayTween) return;
+        swayTween = gsap.fromTo(
+          swayDiv,
+          { rotation: -1.5 },
+          {
+            rotation: 1.5,
+            duration: 2,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+            transformOrigin: "20px 0"
+          }
+        );
+        activeChainTweens.push(swayTween);
+      }
+
+      function triggerTug() {
+        if (tugged) return;
+        tugged = true;
+
+        const tugTween = gsap.to(swayDiv, {
+          y: 2,
+          duration: 0.2,
+          yoyo: true,
+          repeat: 1,
+          ease: "power1.inOut",
+          onComplete: () => {
+            startSway();
+          }
+        });
+        activeChainTweens.push(tugTween);
+
+        const cardTween = gsap.to([upperCard, lowerCard], {
+          y: "+=2",
+          duration: 0.2,
+          yoyo: true,
+          repeat: 1,
+          ease: "power1.inOut"
+        });
+        activeChainTweens.push(cardTween);
+      }
+
       const tl = gsap.timeline({
         scrollTrigger: {
-          trigger: lowerRow,
-          start: "top 95%",
-          end: "top 55%",
-          scrub: 0.35,
+          trigger: chainDiv,
+          start: "top 85%",
+          end: "bottom 60%",
+          scrub: 0.6,
           onUpdate: (self) => {
-            if (self.progress >= 0.98 && !hasTugged) {
-              hasTugged = true;
-              triggerTugEffect(chainData.group, upperCard, lowerCard);
-            } else if (self.progress < 0.7) {
-              hasTugged = false;
+            if (self.progress >= 0.99 && !tugged) {
+              triggerTug();
             }
           }
         }
       });
 
-      // Links drop 12px into place while fading in
       tl.fromTo(
-        chainData.linkUnits,
-        { opacity: 0, y: -12 },
+        linkElements,
+        {
+          opacity: 0,
+          y: (i) => i * pitch - 12
+        },
         {
           opacity: 1,
-          y: 0,
+          y: (i) => i * pitch,
           stagger: 0.05,
-          duration: 1,
           ease: "none"
         }
       );
 
-      // Sway whole chain as one rigid unit (1.5 deg, 4s, pivoting at top anchor)
-      const swayTween = gsap.to(chainData.group, {
-        rotation: 1.5,
-        transformOrigin: `${x1}px ${y1}px`,
-        duration: 4,
-        ease: "sine.inOut",
-        yoyo: true,
-        repeat: -1
-      });
-
-      chainInstances.push({ trigger: tl.scrollTrigger, swayTween });
+      activeChainTweens.push(tl);
+      if (tl.scrollTrigger) {
+        activeChainTriggers.push(tl.scrollTrigger);
+      }
     }
   }
 
   constructAllChains();
 
-  // FIX B.8: Recalculate after images and fonts load, on resize, and with ResizeObserver
+  // FIX 2.E: Recalculate everything after fonts & images load, on resize, and with ResizeObserver
   window.addEventListener("load", () => {
     constructAllChains();
     if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
@@ -642,7 +709,7 @@ function setupChains(prefersReducedMotion) {
     resizeTimer = setTimeout(() => {
       constructAllChains();
       if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
-    }, 120);
+    }, 100);
   });
 
   if (typeof ResizeObserver !== "undefined") {
@@ -650,245 +717,8 @@ function setupChains(prefersReducedMotion) {
       constructAllChains();
       if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
     });
-    ro.observe(container);
-    const allRows = document.querySelectorAll(".project-row");
-    allRows.forEach((r) => ro.observe(r));
+    ro.observe(wrapper);
   }
-}
-
-/**
- * Step 2 of Chain Animation:
- * Quick tug (3px drop & bounce back) and both cards move 2px and settle
- */
-function triggerTugEffect(chainGroup, upperCard, lowerCard) {
-  if (typeof gsap === "undefined") return;
-
-  gsap.to(chainGroup, {
-    y: "+=3",
-    duration: 0.12,
-    yoyo: true,
-    repeat: 1,
-    ease: "power1.inOut"
-  });
-
-  gsap.to([upperCard, lowerCard], {
-    y: "+=2",
-    duration: 0.1,
-    yoyo: true,
-    repeat: 1,
-    ease: "power1.inOut"
-  });
-}
-
-/**
- * FIX B: Mathematical curve & realistic interlocking metal chain builder
- * - Curve with ~6% sag, arriving nearly straight down at lower card
- * - Links 26px wide by 44px long, spacing ~31px
- * - Alternating Face-On oval rings & Edge-On capsules
- * - Over-under interlocking layers using clipPath
- * - Metal gradient, highlight line, 10px end anchors, and 2px drop shadow
- */
-function createInterlockingChain(svgLayer, defs, x1, y1, x2, y2, chainIndex) {
-  const dist = Math.hypot(x2 - x1, y2 - y1);
-  const sag = dist * 0.06;
-
-  // Cubic Bezier: starts outward, sags with weight, arrives going straight down at (x2, y2)
-  const c1x = x1 + (x2 - x1) * 0.35;
-  const c1y = y1 + sag + (y2 - y1) * 0.2;
-  const c2x = x2;
-  const c2y = y2 - Math.max(35, (y2 - y1) * 0.45);
-
-  function bezierPt(t) {
-    const mt = 1 - t;
-    const mt2 = mt * mt;
-    const mt3 = mt2 * mt;
-    const t2 = t * t;
-    const t3 = t2 * t;
-
-    const px = mt3 * x1 + 3 * mt2 * t * c1x + 3 * mt * t2 * c2x + t3 * x2;
-    const py = mt3 * y1 + 3 * mt2 * t * c1y + 3 * mt * t2 * c2y + t3 * y2;
-
-    // First derivative for tangent
-    const dx = 3 * mt2 * (c1x - x1) + 6 * mt * t * (c2x - c1x) + 3 * t2 * (x2 - c2x);
-    const dy = 3 * mt2 * (c1y - y1) + 6 * mt * t * (c2y - c1y) + 3 * t2 * (y2 - c2y);
-
-    return { x: px, y: py, dx, dy };
-  }
-
-  // Pre-sample curve for accurate arc length parameterization
-  const SAMPLES = 300;
-  const arcLengths = [0];
-  let prevPt = bezierPt(0);
-
-  for (let s = 1; s <= SAMPLES; s++) {
-    const t = s / SAMPLES;
-    const curPt = bezierPt(t);
-    const segDist = Math.hypot(curPt.x - prevPt.x, curPt.y - prevPt.y);
-    arcLengths.push(arcLengths[s - 1] + segDist);
-    prevPt = curPt;
-  }
-
-  const totalLength = arcLengths[SAMPLES];
-
-  // Spacing: center-to-center ~31px
-  const targetSpacing = 31;
-  const numSteps = Math.max(4, Math.round(totalLength / targetSpacing));
-  const actualSpacing = totalLength / numSteps;
-
-  function getPointAtDist(d) {
-    const target = Math.min(totalLength, Math.max(0, d));
-    // Binary search sample index
-    let low = 0, high = SAMPLES;
-    while (low < high) {
-      const mid = (low + high) >> 1;
-      if (arcLengths[mid] < target) low = mid + 1;
-      else high = mid;
-    }
-    const idx = Math.max(1, low);
-    const segLen = arcLengths[idx] - arcLengths[idx - 1];
-    const frac = segLen > 0 ? (target - arcLengths[idx - 1]) / segLen : 0;
-    const t = (idx - 1 + frac) / SAMPLES;
-    return bezierPt(t);
-  }
-
-  // Main group for whole chain with soft 2px drop shadow
-  const chainGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-  chainGroup.setAttribute("class", "chain-svg-group");
-  chainGroup.setAttribute("id", `chain-group-${chainIndex}`);
-  chainGroup.setAttribute("filter", "url(#chain-shadow)");
-
-  // ClipPaths for over-under interlocking (front half vs back half of face-on rings)
-  const clipBack = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-  clipBack.setAttribute("id", `clip-back-${chainIndex}`);
-  clipBack.innerHTML = `<rect x="-30" y="0" width="60" height="30"/>`;
-  defs.appendChild(clipBack);
-
-  const clipFront = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-  clipFront.setAttribute("id", `clip-front-${chainIndex}`);
-  clipFront.innerHTML = `<rect x="-30" y="-30" width="60" height="30"/>`;
-  defs.appendChild(clipFront);
-
-  const linkUnits = [];
-
-  // Generate each link along curve (0 to numSteps)
-  for (let k = 0; k <= numSteps; k++) {
-    const pt = getPointAtDist(k * actualSpacing);
-    const angleRad = Math.atan2(pt.dy, pt.dx);
-    const angleDeg = (angleRad * 180) / Math.PI;
-
-    // Unit container for GSAP staggered drop animation
-    const unitG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    unitG.setAttribute("class", "chain-link-unit");
-
-    const isFaceOn = k % 2 === 1;
-
-    if (!isFaceOn) {
-      // EVEN: EDGE-ON solid capsule (8px wide by 40px long, turned 90 deg)
-      const edgeG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      edgeG.setAttribute("transform", `translate(${pt.x}, ${pt.y}) rotate(${angleDeg})`);
-
-      const capsule = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      capsule.setAttribute("x", "-4");
-      capsule.setAttribute("y", "-20");
-      capsule.setAttribute("width", "8");
-      capsule.setAttribute("height", "40");
-      capsule.setAttribute("rx", "4");
-      capsule.setAttribute("fill", "url(#chain-metal-grad)");
-      capsule.setAttribute("stroke", "#222222");
-      capsule.setAttribute("stroke-width", "1");
-
-      const edgeHighlight = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      edgeHighlight.setAttribute("x1", "-1");
-      edgeHighlight.setAttribute("y1", "-16");
-      edgeHighlight.setAttribute("x2", "-1");
-      edgeHighlight.setAttribute("y2", "16");
-      edgeHighlight.setAttribute("stroke", "rgba(255,255,255,0.75)");
-      edgeHighlight.setAttribute("stroke-width", "1");
-
-      edgeG.appendChild(capsule);
-      edgeG.appendChild(edgeHighlight);
-      unitG.appendChild(edgeG);
-    } else {
-      // ODD: FACE-ON hollow ring (26px wide by 44px long, stroke ~6px, see-through middle)
-      // Rendered with two interlocking layers (back half and front half)
-      const ringG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      ringG.setAttribute("transform", `translate(${pt.x}, ${pt.y}) rotate(${angleDeg})`);
-
-      function createRingShape(clipId) {
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        if (clipId) g.setAttribute("clip-path", `url(#${clipId})`);
-
-        // Outer oval stroke (6px thick metal ring)
-        const outer = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        outer.setAttribute("x", "-13");
-        outer.setAttribute("y", "-22");
-        outer.setAttribute("width", "26");
-        outer.setAttribute("height", "44");
-        outer.setAttribute("rx", "13");
-        outer.setAttribute("fill", "none");
-        outer.setAttribute("stroke", "url(#chain-metal-grad)");
-        outer.setAttribute("stroke-width", "6");
-
-        // Thin dark borders
-        const darkOuter = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        darkOuter.setAttribute("x", "-13");
-        darkOuter.setAttribute("y", "-22");
-        darkOuter.setAttribute("width", "26");
-        darkOuter.setAttribute("height", "44");
-        darkOuter.setAttribute("rx", "13");
-        darkOuter.setAttribute("fill", "none");
-        darkOuter.setAttribute("stroke", "#222222");
-        darkOuter.setAttribute("stroke-width", "1");
-
-        const darkInner = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        darkInner.setAttribute("x", "-7");
-        darkInner.setAttribute("y", "-16");
-        darkInner.setAttribute("width", "14");
-        darkInner.setAttribute("height", "32");
-        darkInner.setAttribute("rx", "7");
-        darkInner.setAttribute("fill", "none");
-        darkInner.setAttribute("stroke", "#222222");
-        darkInner.setAttribute("stroke-width", "1");
-
-        // Top edge white highlight line
-        const ringHighlight = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        ringHighlight.setAttribute("d", "M -8 -19 Q 0 -22 8 -19");
-        ringHighlight.setAttribute("fill", "none");
-        ringHighlight.setAttribute("stroke", "rgba(255,255,255,0.8)");
-        ringHighlight.setAttribute("stroke-width", "1.2");
-
-        g.appendChild(outer);
-        g.appendChild(darkOuter);
-        g.appendChild(darkInner);
-        g.appendChild(ringHighlight);
-        return g;
-      }
-
-      // Back half sits behind, front half sits in front for true over-under interlocking
-      ringG.appendChild(createRingShape(`clip-back-${chainIndex}`));
-      ringG.appendChild(createRingShape(`clip-front-${chainIndex}`));
-      unitG.appendChild(ringG);
-    }
-
-    chainGroup.appendChild(unitG);
-    linkUnits.push(unitG);
-  }
-
-  // FIX B.6: Small 10px round metal anchors where chain meets each card
-  function createAnchor(cx, cy) {
-    const anchorG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    anchorG.innerHTML = `
-      <circle cx="${cx}" cy="${cy}" r="5" fill="#252422" stroke="#111111" stroke-width="1.5"/>
-      <circle cx="${cx - 1}" cy="${cy - 1}" r="2" fill="#88857F"/>
-    `;
-    return anchorG;
-  }
-
-  chainGroup.appendChild(createAnchor(x1, y1));
-  chainGroup.appendChild(createAnchor(x2, y2));
-
-  svgLayer.appendChild(chainGroup);
-  return { group: chainGroup, linkUnits };
 }
 
 /**
@@ -914,6 +744,43 @@ function setupStatementEntrance(prefersReducedMotion) {
   })
     .fromTo(title, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" })
     .fromTo(text, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, "+=0.1");
+}
+
+/**
+ * FIX 3: Paper Stack Entrance Animation
+ * When footer enters screen, paper stack drops in over 0.9s from translateY(48px), rotate(3deg) and opacity 0
+ */
+function setupPaperAnimation(prefersReducedMotion) {
+  const paperStack = document.getElementById("paper-stack");
+  const footer = document.querySelector(".site-footer");
+  if (!paperStack || !footer) return;
+
+  if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
+    paperStack.style.opacity = "1";
+    paperStack.style.transform = "none";
+    return;
+  }
+
+  gsap.fromTo(
+    paperStack,
+    {
+      opacity: 0,
+      y: 48,
+      rotation: 3
+    },
+    {
+      opacity: 1,
+      y: 0,
+      rotation: 0,
+      duration: 0.9,
+      ease: "power2.out",
+      scrollTrigger: {
+        trigger: footer,
+        start: "top 80%",
+        toggleActions: "play none none none"
+      }
+    }
+  );
 }
 
 /**
