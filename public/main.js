@@ -1,13 +1,12 @@
+// Order of the page's sections: 
+// 1. Hero, 2. Projects (the zigzag items), 3. Remaining Body (statement section), 4. Footer (with paper form)
+
 /**
  * ==========================================================================
  * Kinetic Portfolio & Zigzag Showcase - Main Script
  * ==========================================================================
  */
 
-/**
- * FIX 2.A: Link drawing scale constant
- * Every link is drawn at this scale so a wide link ends up ~20px wide and ~32px long.
- */
 const LINK_SCALE = 0.5;
 
 /**
@@ -16,369 +15,428 @@ const LINK_SCALE = 0.5;
 const SITE_CONTENT = window.SITE || {};
 
 /**
- * Handle form submission
- * @param {Object} data - Cleaned form field values
+ * Background-removal helper for character image
  */
-function submitForm(data) {
-  // TODO: Plug in your real backend API or form endpoint here (e.g. fetch('/api/contact', ...))
-  console.log("Contact form submitted with data:", data);
+function prepareCharacterImage(imgEl) {
+  return new Promise((resolve) => {
+    if (!imgEl) return resolve();
+
+    function process() {
+      try {
+        const w = imgEl.naturalWidth || imgEl.width;
+        const h = imgEl.naturalHeight || imgEl.height;
+        if (!w || !h) return resolve();
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return resolve();
+
+        ctx.drawImage(imgEl, 0, 0);
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const data = imgData.data;
+
+        // Check corner pixel alphas to see if already transparent
+        const cIndices = [
+          0,
+          (w - 1) * 4,
+          (h - 1) * w * 4,
+          ((h - 1) * w + (w - 1)) * 4
+        ];
+        const alreadyTransparent = cIndices.every((idx) => data[idx + 3] < 10);
+        if (alreadyTransparent) {
+          return resolve();
+        }
+
+        const tolerance = 18;
+        function isWhiteBg(idx) {
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          const a = data[idx + 3];
+          if (a < 10) return false;
+          return (255 - r <= tolerance) && (255 - g <= tolerance) && (255 - b <= tolerance);
+        }
+
+        const visited = new Uint8Array(w * h);
+        const queue = new Int32Array(w * h);
+        let head = 0;
+        let tail = 0;
+
+        function pushPixel(px, py) {
+          if (px < 0 || px >= w || py < 0 || py >= h) return;
+          const i = py * w + px;
+          if (visited[i]) return;
+          visited[i] = 1;
+          if (isWhiteBg(i * 4)) {
+            queue[tail++] = i;
+          }
+        }
+
+        // Seed all border pixels
+        for (let x = 0; x < w; x++) {
+          pushPixel(x, 0);
+          pushPixel(x, h - 1);
+        }
+        for (let y = 0; y < h; y++) {
+          pushPixel(0, y);
+          pushPixel(w - 1, y);
+        }
+
+        // 4-way BFS flood-fill inward
+        while (head < tail) {
+          const curr = queue[head++];
+          const cx = curr % w;
+          const cy = Math.floor(curr / w);
+          const neighbors = [
+            [cx + 1, cy],
+            [cx - 1, cy],
+            [cx, cy + 1],
+            [cx, cy - 1]
+          ];
+          for (let i = 0; i < 4; i++) {
+            const nx = neighbors[i][0];
+            const ny = neighbors[i][1];
+            if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+              const nIdx = ny * w + nx;
+              if (!visited[nIdx]) {
+                visited[nIdx] = 1;
+                if (isWhiteBg(nIdx * 4)) {
+                  queue[tail++] = nIdx;
+                }
+              }
+            }
+          }
+        }
+
+        // Mark cleared pixels
+        for (let i = 0; i < tail; i++) {
+          const pIdx = queue[i] * 4;
+          data[pIdx + 3] = 0;
+        }
+
+        // Perimeter softening: lower alpha of pixels adjacent to cleared pixels by ~35%
+        for (let y = 1; y < h - 1; y++) {
+          for (let x = 1; x < w - 1; x++) {
+            const i = y * w + x;
+            const idx = i * 4;
+            if (data[idx + 3] > 0) {
+              const hasClearedNeighbor =
+                data[(idx - 4) + 3] === 0 ||
+                data[(idx + 4) + 3] === 0 ||
+                data[(idx - w * 4) + 3] === 0 ||
+                data[(idx + w * 4) + 3] === 0;
+
+              if (hasClearedNeighbor) {
+                data[idx + 3] = Math.round(data[idx + 3] * 0.65);
+              }
+            }
+          }
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+        imgEl.src = canvas.toDataURL("image/png");
+        try {
+          imgEl.decode().then(resolve).catch(resolve);
+        } catch {
+          resolve();
+        }
+      } catch (e) {
+        console.warn("Background removal error:", e);
+        resolve();
+      }
+    }
+
+    if (imgEl.complete && imgEl.naturalWidth !== 0) {
+      process();
+    } else {
+      imgEl.addEventListener("load", process, { once: true });
+      imgEl.addEventListener("error", resolve, { once: true });
+    }
+  });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// PART 1 - NO FLASH ON LOAD GATING
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+function triggerAppInit() {
+  const characterImg = document.querySelector(".hero__character-img");
+  const characterReady = prepareCharacterImage(characterImg);
+  const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+  const readyTimeout = new Promise((resolve) => setTimeout(resolve, 2500));
+
+  Promise.race([
+    Promise.all([fontsReady, characterReady]),
+    readyTimeout
+  ]).then(() => {
+    document.documentElement.classList.add("is-ready");
+    requestAnimationFrame(() => {
+      initLandingApp(prefersReducedMotion);
+      if (typeof ScrollTrigger !== "undefined") {
+        ScrollTrigger.refresh();
+      }
+    });
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", triggerAppInit);
+} else {
+  triggerAppInit();
+}
+
+/**
+ * Initialize all landing page components after readiness gate
+ */
+function initLandingApp(prefersReducedMotion) {
   populateSiteContent();
   setupScrollProgress();
-
-  // Hero background-removal fallback on character and cat before reveal animation
-  const characterImg = document.querySelector(".hero__character-img");
-  const catImg = document.querySelector(".hero__cat-img");
-
-  let charReady = false;
-  let catReady = !catImg;
-
-  function onHeroReady() {
-    if (charReady && catReady) {
-      setupHeroInteractions(prefersReducedMotion);
-    }
-  }
-
-  prepareCharacterImage(characterImg, () => {
-    charReady = true;
-    onHeroReady();
-  });
-
-  if (catImg) {
-    prepareCharacterImage(catImg, () => {
-      catReady = true;
-      onHeroReady();
-    });
-  }
-
+  setupHeroInteractions(prefersReducedMotion);
   setupProjectEntrance(prefersReducedMotion);
-  setupChains(prefersReducedMotion);
+  setupChainsLifecycle(prefersReducedMotion);
   setupStatementEntrance(prefersReducedMotion);
-  setupPaperAnimation(prefersReducedMotion);
-  setupContactForm();
+  initContactForm(prefersReducedMotion);
   setupSmoothScroll();
   setupProjectTransitions(prefersReducedMotion);
-});
-
-/**
- * Automatic background-removal fallback for flat pure white background
- * Draws character onto canvas, flood-fills inward from 4 corners within tolerance
- * of 18 per channel of pure white (255,255,255), and softens the edge by lowering
- * the alpha of perimeter pixels by ~35%.
- */
-function prepareCharacterImage(imgEl, onReady) {
-  if (!imgEl) return onReady();
-
-  function process() {
-    try {
-      const w = imgEl.naturalWidth || imgEl.width;
-      const h = imgEl.naturalHeight || imgEl.height;
-      if (!w || !h) return onReady();
-
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return onReady();
-
-      ctx.drawImage(imgEl, 0, 0);
-
-      const imgData = ctx.getImageData(0, 0, w, h);
-      const data = imgData.data;
-
-      // Check corner pixel alphas
-      const cIndices = [
-        0,                            // top-left
-        (w - 1) * 4,                  // top-right
-        (h - 1) * w * 4,              // bottom-left
-        ((h - 1) * w + (w - 1)) * 4   // bottom-right
-      ];
-
-      const alreadyTransparent = cIndices.every((idx) => data[idx + 3] < 10);
-      if (alreadyTransparent) {
-        return onReady();
-      }
-
-      const tolerance = 18;
-      // Pixel is connected white background if within tolerance of 18 per channel of pure white (255, 255, 255)
-      function isWhiteBg(idx) {
-        return (
-          data[idx] >= 255 - tolerance &&
-          data[idx + 1] >= 255 - tolerance &&
-          data[idx + 2] >= 255 - tolerance
-        );
-      }
-
-      const visited = new Uint8Array(w * h);
-      const queue = [];
-      const cornerCoords = [0, w - 1, (h - 1) * w, (h - 1) * w + (w - 1)];
-
-      cornerCoords.forEach((pos) => {
-        if (isWhiteBg(pos * 4)) {
-          visited[pos] = 1;
-          queue.push(pos);
-        }
-      });
-
-      // Flood-fill inward from four corners
-      let head = 0;
-      while (head < queue.length) {
-        const curr = queue[head++];
-        const cx = curr % w;
-        const cy = Math.floor(curr / w);
-        const pIdx = curr * 4;
-
-        data[pIdx + 3] = 0; // Make connected white pixel transparent
-
-        // Check 4-connected neighbors
-        const nList = [];
-        if (cx > 0) nList.push(curr - 1);
-        if (cx < w - 1) nList.push(curr + 1);
-        if (cy > 0) nList.push(curr - w);
-        if (cy < h - 1) nList.push(curr + w);
-
-        for (let i = 0; i < nList.length; i++) {
-          const n = nList[i];
-          if (!visited[n]) {
-            visited[n] = 1;
-            if (isWhiteBg(n * 4)) {
-              queue.push(n);
-            }
-          }
-        }
-      }
-
-      // Soften edge: remaining pixels touching transparent pixels have alpha reduced by ~35%
-      for (let y = 1; y < h - 1; y++) {
-        for (let x = 1; x < w - 1; x++) {
-          const idx = (y * w + x) * 4;
-          if (data[idx + 3] > 0) {
-            const hasTransparentNeighbor =
-              data[((y - 1) * w + x) * 4 + 3] === 0 ||
-              data[((y + 1) * w + x) * 4 + 3] === 0 ||
-              data[(y * w + (x - 1)) * 4 + 3] === 0 ||
-              data[(y * w + (x + 1)) * 4 + 3] === 0;
-
-            if (hasTransparentNeighbor) {
-              data[idx + 3] = Math.round(data[idx + 3] * 0.65);
-            }
-          }
-        }
-      }
-
-      ctx.putImageData(imgData, 0, 0);
-      imgEl.src = canvas.toDataURL("image/png");
-      onReady();
-    } catch (err) {
-      console.warn("Transparency fallback error, showing original:", err);
-      onReady();
-    }
-  }
-
-  if (imgEl.complete && imgEl.naturalWidth > 0) {
-    process();
-  } else {
-    imgEl.addEventListener("load", process, { once: true });
-    imgEl.addEventListener("error", () => onReady(), { once: true });
-  }
 }
 
 /**
- * Injects content from SITE_CONTENT into the DOM
+ * Populate dynamic placeholder data from content.js
  */
 function populateSiteContent() {
-  const logoEl = document.querySelector(".nav__logo");
-  if (logoEl) logoEl.textContent = SITE_CONTENT.brand.name;
+  const brand = SITE_CONTENT.brand || {};
+  const hero = SITE_CONTENT.hero || {};
+  const remaining = SITE_CONTENT.remainingBody || {};
+  const projects = SITE_CONTENT.projects || [];
+  const footer = SITE_CONTENT.footer || {};
 
-  const navLinks = document.querySelectorAll(".nav__link");
-  if (navLinks.length >= SITE_CONTENT.navigation.length) {
-    SITE_CONTENT.navigation.forEach((item, idx) => {
-      navLinks[idx].textContent = item.label;
-      navLinks[idx].setAttribute("href", item.href);
-    });
+  const logo = document.querySelector(".nav__logo");
+  if (logo && brand.name) {
+    logo.textContent = brand.name;
+    document.title = brand.name;
   }
 
-  const titleLeft = document.getElementById("hero-title-left");
-  if (titleLeft) titleLeft.textContent = SITE_CONTENT.hero.headlineLeft;
+  const footerLogo = document.querySelector(".footer-logo");
+  if (footerLogo && brand.name) {
+    footerLogo.textContent = brand.name;
+  }
 
-  const titleRight = document.getElementById("hero-title-right");
-  if (titleRight) titleRight.textContent = SITE_CONTENT.hero.headlineRight;
+  const footerSentence = document.querySelector(".footer-sentence");
+  if (footerSentence && footer.description) {
+    footerSentence.textContent = footer.description;
+  }
 
-  const subtextLeft = document.getElementById("hero-subtext-left");
-  if (subtextLeft) subtextLeft.textContent = SITE_CONTENT.hero.subtextLeft;
+  const copyrightText = document.getElementById("copyright-text");
+  if (copyrightText && brand.name) {
+    const year = new Date().getFullYear();
+    copyrightText.innerHTML = `&copy; <span id="copyright-year">${year}</span> ${footer.copyrightName || `${brand.name}. All rights reserved.`}`;
+  }
 
-  const subtextRight = document.getElementById("hero-subtext-right");
-  if (subtextRight) subtextRight.textContent = SITE_CONTENT.hero.subtextRight;
+  const hTitleLeft = document.getElementById("hero-title-left");
+  const hTitleRight = document.getElementById("hero-title-right");
+  const hSubLeft = document.getElementById("hero-subtext-left");
+  const hSubRight = document.getElementById("hero-subtext-right");
 
-  const projectRows = document.querySelectorAll(".project-row");
-  projectRows.forEach((row, index) => {
-    const proj = SITE_CONTENT.projects[index];
-    if (!proj) return;
+  if (hTitleLeft && hero.headlineLeft) hTitleLeft.textContent = hero.headlineLeft;
+  if (hTitleRight && hero.headlineRight) hTitleRight.textContent = hero.headlineRight;
+  if (hSubLeft && hero.subtextLeft) hSubLeft.textContent = hero.subtextLeft;
+  if (hSubRight && hero.subtextRight) hSubRight.textContent = hero.subtextRight;
+
+  const stTitle = document.getElementById("statement-title");
+  const stText = document.getElementById("statement-text");
+  if (stTitle && remaining.statement) stTitle.textContent = remaining.statement;
+  if (stText && remaining.paragraph) stText.textContent = remaining.paragraph;
+
+  const rows = document.querySelectorAll(".project-row");
+  rows.forEach((row, idx) => {
+    const pData = projects[idx];
+    if (!pData) return;
+
+    row.setAttribute("data-slug", pData.slug);
     const titleEl = row.querySelector(".project-info__title");
     const descEl = row.querySelector(".project-info__desc");
     const linkEl = row.querySelector(".project-info__link");
     const imgEl = row.querySelector(".project-card__img");
 
-    if (titleEl) titleEl.textContent = proj.title;
-    if (descEl) descEl.textContent = proj.summary || proj.description;
+    if (titleEl) titleEl.textContent = pData.title;
+    if (descEl) descEl.textContent = pData.summary;
     if (linkEl) {
-      linkEl.href = `project.html?p=${proj.slug || 'project-' + (index + 1)}`;
-      linkEl.innerHTML = `${proj.linkText || "View project"} <span class="project-info__arrow" aria-hidden="true">&rarr;</span>`;
+      linkEl.href = `project.html?p=${pData.slug}`;
+      linkEl.innerHTML = `View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span>`;
     }
-    if (imgEl && proj.image) {
-      imgEl.src = proj.image;
-      imgEl.alt = proj.alt || proj.title;
+    if (imgEl && pData.image) {
+      imgEl.src = pData.image;
+      imgEl.alt = pData.alt || `${pData.title} overview`;
     }
   });
-
-  const statementTitle = document.getElementById("statement-title");
-  if (statementTitle) statementTitle.textContent = SITE_CONTENT.remainingBody.statement;
-
-  const statementText = document.getElementById("statement-text");
-  if (statementText) statementText.textContent = SITE_CONTENT.remainingBody.paragraph;
-
-  const footerLogo = document.querySelector(".footer-logo");
-  if (footerLogo) footerLogo.textContent = SITE_CONTENT.brand.name;
-
-  const footerSentence = document.querySelector(".footer-sentence");
-  if (footerSentence) footerSentence.textContent = SITE_CONTENT.footer.description;
-
-  const footerPagesList = document.getElementById("footer-pages-list");
-  if (footerPagesList) {
-    footerPagesList.innerHTML = SITE_CONTENT.footer.pages
-      .map((item) => `<li><a href="${item.href}" class="footer-link">${item.label}</a></li>`)
-      .join("");
-  }
-
-  const footerSocialList = document.getElementById("footer-social-list");
-  if (footerSocialList) {
-    footerSocialList.innerHTML = SITE_CONTENT.footer.social
-      .map((item) => `<li><a href="${item.href}" class="footer-link">${item.label}</a></li>`)
-      .join("");
-  }
-
-  const copyrightYear = document.getElementById("copyright-year");
-  if (copyrightYear) copyrightYear.textContent = new Date().getFullYear();
-
-  const copyrightText = document.getElementById("copyright-text");
-  if (copyrightText) copyrightText.textContent = ` © ${new Date().getFullYear()} ${SITE_CONTENT.footer.copyrightName}`;
-
-  const needSelect = document.getElementById("field-need");
-  if (needSelect) {
-    needSelect.innerHTML = SITE_CONTENT.contact.options
-      .map((opt) => `<option value="${opt.value}">${opt.label}</option>`)
-      .join("");
-  }
 }
 
 /**
- * Thin scroll progress indicator at top of page
+ * Reading progress line synchronized with window scroll
  */
 function setupScrollProgress() {
   const progressBar = document.getElementById("scroll-progress");
   if (!progressBar) return;
 
-  function updateProgress() {
+  window.addEventListener("scroll", () => {
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    if (scrollHeight > 0) {
-      const percentage = (scrollTop / scrollHeight) * 100;
-      progressBar.style.width = `${percentage}%`;
-    }
-  }
-
-  window.addEventListener("scroll", updateProgress, { passive: true });
-  updateProgress();
+    const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progressBar.style.width = `${progress}%`;
+    progressBar.setAttribute("aria-valuenow", Math.round(progress));
+  }, { passive: true });
 }
 
 /**
- * Section 1: Hero entrance and floating physics simulation
+ * Hero section animations, float loops, and responsive mouse parallax
  */
 function setupHeroInteractions(prefersReducedMotion) {
-  const nav = document.querySelector(".site-header");
-  const headlineLeft = document.querySelector(".hero__headline-col--left");
-  const headlineRight = document.querySelector(".hero__headline-col--right");
-  const character = document.querySelector(".hero__character-img");
-  const characterWrapper = document.querySelector(".hero__character-wrapper");
-  const figure = document.querySelector(".hero__figure") || character;
-  const shadow = document.querySelector(".hero__shadow");
-  const scrollHint = document.querySelector(".hero__scroll-hint");
+  const heroWrapper = document.querySelector(".hero__character-wrapper");
+  const heroFigure = document.querySelector(".hero__figure");
+  const characterImg = document.querySelector(".hero__character-img");
+  const catImg = document.querySelector(".hero__cat-img");
+  const heroShadow = document.querySelector(".hero__shadow");
+  const titleLeft = document.getElementById("hero-title-left");
+  const titleRight = document.getElementById("hero-title-right");
+  const subLeft = document.getElementById("hero-subtext-left");
+  const subRight = document.getElementById("hero-subtext-right");
+  const heroSection = document.querySelector(".hero");
 
-  if (!character || !shadow) return;
+  if (!heroWrapper || !heroFigure || !heroShadow) return;
 
-  if (prefersReducedMotion) {
-    if (nav) nav.style.opacity = "1";
-    if (headlineLeft) headlineLeft.style.opacity = "1";
-    if (headlineRight) headlineRight.style.opacity = "1";
-    if (characterWrapper) characterWrapper.style.opacity = "1";
-    if (figure) figure.style.opacity = "1";
-    if (shadow) shadow.style.opacity = "1";
+  if (prefersReducedMotion || typeof gsap === "undefined") {
+    gsap.set([heroWrapper, heroShadow, titleLeft, titleRight, subLeft, subRight], {
+      opacity: 1,
+      y: 0,
+      scale: 1
+    });
     return;
   }
 
-  if (typeof gsap !== "undefined") {
-    const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+  // Hero entrance reveal
+  const introTl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
-    tl.fromTo(nav, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 })
-      .fromTo([headlineLeft, headlineRight], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.15 }, "-=0.3")
-      .fromTo(characterWrapper, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.9 }, "-=0.6")
-      .fromTo(shadow, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.8 }, "-=0.7")
-      .fromTo(scrollHint, { opacity: 0 }, { opacity: 1, duration: 0.5 }, "-=0.3");
+  introTl
+    .fromTo(
+      heroShadow,
+      { opacity: 0, scale: 0.8 },
+      { opacity: 1, scale: 1, duration: 1.2 }
+    )
+    .fromTo(
+      [titleLeft, titleRight],
+      { opacity: 0, y: 32 },
+      { opacity: 1, y: 0, duration: 0.9, stagger: 0.15 },
+      "-=0.9"
+    )
+    .fromTo(
+      heroFigure,
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 1.1, ease: "power2.out" },
+      "-=0.8"
+    )
+    .fromTo(
+      [subLeft, subRight],
+      { opacity: 0, y: 16 },
+      { opacity: 0.8, y: 0, duration: 0.7, stagger: 0.1 },
+      "-=0.5"
+    );
 
-    // Float loop (about 14px up and down, 5 to 6s, sine ease-in-out, 1deg rotation) applied to figure
-    gsap.to(figure, {
-      y: -14,
-      rotation: 1,
-      duration: 2.7,
+  // Tactile floating loops for character and cat
+  gsap.to(characterImg, {
+    y: -8,
+    duration: 3.2,
+    ease: "sine.inOut",
+    yoyo: true,
+    repeat: -1
+  });
+
+  if (catImg) {
+    gsap.to(catImg, {
+      y: -6,
+      rotation: 0.5,
+      duration: 2.8,
       ease: "sine.inOut",
       yoyo: true,
-      repeat: -1
+      repeat: -1,
+      delay: 0.4
+    });
+  }
+
+  gsap.to(heroShadow, {
+    scaleX: 0.94,
+    opacity: 0.22,
+    duration: 3.2,
+    ease: "sine.inOut",
+    yoyo: true,
+    repeat: -1
+  });
+
+  // Desktop subtle mouse parallax
+  if (heroSection && window.innerWidth >= 900) {
+    heroSection.addEventListener("mousemove", (e) => {
+      const rect = heroSection.getBoundingClientRect();
+      const xPercent = (e.clientX - rect.left) / rect.width - 0.5;
+      const yPercent = (e.clientY - rect.top) / rect.height - 0.5;
+
+      gsap.to(heroWrapper, {
+        x: xPercent * 14,
+        y: yPercent * 10,
+        duration: 0.8,
+        ease: "power1.out"
+      });
+
+      gsap.to([titleLeft, titleRight], {
+        x: xPercent * -6,
+        duration: 0.8,
+        ease: "power1.out"
+      });
     });
 
-    // In-sync floor shadow breathing: shrinks & lightens as figure rises, darkens as it descends
-    gsap.to(shadow, {
-      scaleX: 0.82,
-      scaleY: 0.82,
-      opacity: 0.2,
-      duration: 2.7,
-      ease: "sine.inOut",
-      yoyo: true,
-      repeat: -1
+    heroSection.addEventListener("mouseleave", () => {
+      gsap.to([heroWrapper, titleLeft, titleRight], {
+        x: 0,
+        y: 0,
+        duration: 1,
+        ease: "power2.out"
+      });
     });
   }
 }
 
 /**
- * Section 2: Project card entrance on scroll
+ * Zigzag Project Rows Reveal Animation
  */
 function setupProjectEntrance(prefersReducedMotion) {
   if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
+    document.querySelectorAll(".project-row").forEach((el) => {
+      const card = el.querySelector(".project-card");
+      const info = el.querySelector(".project-info");
+      if (card) card.style.opacity = "1";
+      if (info) info.style.opacity = "1";
+    });
     return;
   }
-
-  gsap.registerPlugin(ScrollTrigger);
 
   const rows = document.querySelectorAll(".project-row");
   rows.forEach((row) => {
     const card = row.querySelector(".project-card");
-    const isLeft = row.classList.contains("project-row--left");
-    const xOffset = isLeft ? -50 : 50;
+    const info = row.querySelector(".project-info");
+    const isMobile = window.matchMedia("(max-width: 899px)").matches;
+    const yDist = isMobile ? 24 : 40;
 
     gsap.fromTo(
-      card,
-      { opacity: 0, x: xOffset },
+      [card, info],
+      { opacity: 0, y: yDist },
       {
         opacity: 1,
-        x: 0,
+        y: 0,
         duration: 0.8,
+        stagger: 0.15,
         ease: "power2.out",
         scrollTrigger: {
           trigger: row,
-          start: "top 85%",
+          start: "top 80%",
           toggleActions: "play none none none"
         }
       }
@@ -387,112 +445,182 @@ function setupProjectEntrance(prefersReducedMotion) {
 }
 
 /**
- * Helper to compute an element's offset geometry relative to an ancestor wrapper.
- * Traverses offsetParent without getBoundingClientRect to remain completely unaffected by transforms.
+ * ==========================================================================
+ * PART 2 & PART 3: REBUILT CHAIN ENGINE & LIFECYCLE
+ * ==========================================================================
  */
-function getOffsetRectRelativeTo(el, wrapper) {
-  let left = 0;
-  let top = 0;
+
+// Global registry of chains data for window.__chainCheck
+window.__chainData = [];
+
+// Helper to compute element offsets relative to projects-wrapper
+function getOffsetRelativeTo(el, ancestor) {
+  let x = 0;
+  let y = 0;
   let curr = el;
-  while (curr && curr !== wrapper) {
-    left += curr.offsetLeft;
-    top += curr.offsetTop;
+  while (curr && curr !== ancestor) {
+    x += curr.offsetLeft;
+    y += curr.offsetTop;
     curr = curr.offsetParent;
   }
-  const width = el.offsetWidth;
-  const height = el.offsetHeight;
   return {
-    left,
-    top,
-    width,
-    height,
-    right: left + width,
-    bottom: top + height
+    left: x,
+    top: y,
+    right: x + el.offsetWidth,
+    bottom: y + el.offsetHeight,
+    width: el.offsetWidth,
+    height: el.offsetHeight
   };
 }
 
-/**
- * FIX 2: CHAINS & COLLARS REBUILD
- * Straight fine chains between neighboring cards inside .projects-wrapper.
- * 1. S.y = upper.bottom, E.y = lower.top (no vertical offset).
- *    S.x = upperIsLeft ? upper.right - 32 : upper.left + 32.
- *    E.x = lowerIsRight ? lower.left + (isDesktop ? 56 : 32) : lower.right - (isDesktop ? 56 : 32).
- * 2. L = distance S to E, d = unit vector from S to E, angle = -atan2(E.x - S.x, E.y - S.y) in degrees.
- *    P0 = S + 14 * d, P1 = E - 14 * d, Lp = L - 28.
- *    Chain div at left = P0.x - 20, top = P0.y, width = 40, height = Lp, transform-origin = 20px 0, rotate(angle deg).
- *    SVG viewBox "0 0 40 Lp", width 40, height Lp.
- *    Odd link count: n = 2 * max(1, round(Lp / 40)) + 1, pitch = Lp / (n - 1).
- *    Link i: #link-narrow when even, #link-wide when odd, transform translate(20 {i * pitch}) scale(LINK_SCALE).
- * 3. Collars: metal collars centred on S and E, sitting half on card and half outside (z-index: 4).
- * 4. Layering: cards z-index 2, chain z-index 3, collars z-index 4.
- * 5. Animation: sway amplitude 0.8 degrees, tug 2px. Collars fade in over 0.2s at timeline start.
- */
-let activeChainTweens = [];
-let activeChainTriggers = [];
+let activeChainScrollTriggers = [];
 
-function setupChains(prefersReducedMotion) {
-  const wrapper = document.getElementById("projects-wrapper");
-  if (!wrapper) return;
+function buildChains() {
+  try {
+    const wrapper = document.getElementById("projects-wrapper");
+    if (!wrapper) return;
 
-  function constructAllChains() {
-    // Kill previous GSAP animations and remove previous chain and collar DOM elements
-    activeChainTweens.forEach((t) => t.kill());
-    activeChainTriggers.forEach((tr) => tr.kill());
-    activeChainTweens = [];
-    activeChainTriggers = [];
-
+    // Clean up old chains and collars before rebuilding
+    activeChainScrollTriggers.forEach((st) => st.kill());
+    activeChainScrollTriggers = [];
     wrapper.querySelectorAll(".chain, .chain-collar").forEach((el) => el.remove());
+    window.__chainData = [];
 
     const rows = Array.from(wrapper.querySelectorAll(".project-row"));
     if (rows.length < 2) return;
 
-    const isDesktop = !window.matchMedia("(max-width: 899px)").matches;
+    const cards = rows.map((r) => r.querySelector(".project-card"));
+    if (cards.some((c) => !c)) return;
 
-    // Connect Card i to Card i+1 (exactly 4 chains for 5 cards)
-    for (let i = 0; i < rows.length - 1; i++) {
-      const upperRow = rows[i];
-      const lowerRow = rows[i + 1];
-      const upperCard = upperRow.querySelector(".project-card");
-      const lowerCard = lowerRow.querySelector(".project-card");
+    const isMobile = window.matchMedia("(max-width: 899px)").matches;
+    const isNarrow = window.innerWidth < 600;
+    const TILT = isNarrow ? 3 : 2;
 
-      if (!upperCard || !lowerCard) continue;
+    // Set card tilts on mobile or clear on desktop
+    if (isMobile) {
+      // Card 1: not tilted
+      gsap.set(cards[0], { rotation: 0, clearProps: "transformOrigin" });
+      // Card 2: +TILT, origin "28px 0px"
+      gsap.set(cards[1], { rotation: TILT, transformOrigin: "28px 0px" });
+      // Card 3: -TILT, origin (width - 28) + "px 0px"
+      gsap.set(cards[2], { rotation: -TILT, transformOrigin: `${cards[2].offsetWidth - 28}px 0px` });
+      // Card 4: +TILT, origin "28px 0px"
+      gsap.set(cards[3], { rotation: TILT, transformOrigin: "28px 0px" });
+      // Card 5: -TILT, origin (width - 28) + "px 0px"
+      gsap.set(cards[4], { rotation: -TILT, transformOrigin: `${cards[4].offsetWidth - 28}px 0px` });
+    } else {
+      cards.forEach((card) => {
+        gsap.set(card, { rotation: 0, clearProps: "transformOrigin" });
+      });
+    }
 
-      const upper = getOffsetRectRelativeTo(upperCard, wrapper);
-      const lower = getOffsetRectRelativeTo(lowerCard, wrapper);
+    const svgNS = "http://www.w3.org/2000/svg";
 
-      const upperIsLeft = upperRow.classList.contains("project-row--left");
-      const lowerIsRight = lowerRow.classList.contains("project-row--right");
+    // Build exactly four chains connecting neighbouring pairs
+    for (let i = 1; i <= 4; i++) {
+      const upperCard = cards[i - 1];
+      const lowerCard = cards[i];
 
-      // 1. END POINTS: exact card edge attachments with no vertical offset
-      const S = {
-        x: upperIsLeft ? upper.right - 32 : upper.left + 32,
-        y: upper.bottom
-      };
+      const upper = getOffsetRelativeTo(upperCard, wrapper);
+      const lower = getOffsetRelativeTo(lowerCard, wrapper);
 
-      const E = {
-        x: lowerIsRight
-          ? lower.left + (isDesktop ? 56 : 32)
-          : lower.right - (isDesktop ? 56 : 32),
-        y: lower.top
-      };
+      let S = { x: 0, y: 0 };
+      let E = { x: 0, y: 0 };
+      let upperCollarAngle = 0;
+      let lowerCollarAngle = 0;
 
-      // 2. CHAIN PLACEMENT
-      const dxRaw = E.x - S.x;
-      const dyRaw = E.y - S.y;
-      const L = Math.hypot(dxRaw, dyRaw);
-      if (L <= 28) continue;
+      if (isMobile) {
+        // MOBILE HANGING GEOMETRY
+        // E = attachment point of lower card
+        E.y = lower.top;
+        if (i % 2 === 1) {
+          // Odd chain (1, 3): LEFT
+          E.x = lower.left + 28;
+        } else {
+          // Even chain (2, 4): RIGHT
+          E.x = lower.right - 28;
+        }
 
-      const dx = dxRaw / L;
-      const dy = dyRaw / L;
-      const angle = -Math.atan2(dxRaw, dyRaw) * (180 / Math.PI);
+        // Q = upper card bottom corner on same side
+        const Q = {
+          x: (i % 2 === 1) ? (upper.left + 28) : (upper.right - 28),
+          y: upper.bottom
+        };
 
-      const P0 = {
-        x: S.x + 14 * dx,
-        y: S.y + 14 * dy
-      };
+        if (i === 1) {
+          // Card 1 is not tilted
+          S = { x: Q.x, y: Q.y };
+        } else {
+          // Card i >= 2 is tilted around Pu
+          let Pu = { x: 0, y: upper.top };
+          let cardAngleDeg = 0;
+
+          if (i === 2) {
+            // Card 2 tilted +TILT around LEFT attachment point
+            Pu.x = upper.left + 28;
+            cardAngleDeg = TILT;
+          } else if (i === 3) {
+            // Card 3 tilted -TILT around RIGHT attachment point
+            Pu.x = upper.right - 28;
+            cardAngleDeg = -TILT;
+          } else if (i === 4) {
+            // Card 4 tilted +TILT around LEFT attachment point
+            Pu.x = upper.left + 28;
+            cardAngleDeg = TILT;
+          }
+
+          const t = (cardAngleDeg * Math.PI) / 180;
+          const dxPu = Q.x - Pu.x;
+          const dyPu = Q.y - Pu.y;
+          S.x = Pu.x + dxPu * Math.cos(t) - dyPu * Math.sin(t);
+          S.y = Pu.y + dxPu * Math.sin(t) + dyPu * Math.cos(t);
+        }
+
+        upperCollarAngle = (i === 1) ? 0 : (i === 2 ? TILT : (i === 3 ? -TILT : TILT));
+        lowerCollarAngle = (i === 1) ? TILT : (i === 2 ? -TILT : (i === 3 ? TILT : -TILT));
+      } else {
+        // DESKTOP GEOMETRY
+        S.y = upper.bottom;
+        E.y = lower.top;
+        if (i % 2 === 1) {
+          // Upper on left, Lower on right
+          S.x = upper.right - 32;
+          E.x = lower.left + 56;
+        } else {
+          // Upper on right, Lower on left
+          S.x = upper.left + 32;
+          E.x = lower.right - 56;
+        }
+        upperCollarAngle = 0;
+        lowerCollarAngle = 0;
+      }
+
+      const dx = E.x - S.x;
+      const dy = E.y - S.y;
+      const L = Math.hypot(dx, dy);
+      const d = { x: dx / L, y: dy / L };
+      const angle = Math.atan2(dx, dy) * (180 / Math.PI);
+      const P0 = { x: S.x + 14 * d.x, y: S.y + 14 * d.y };
       const Lp = L - 28;
 
-      // Create chain div (z-index: 3)
+      const n = 2 * Math.max(1, Math.round(Lp / 40)) + 1; // always odd
+      const pitch = Lp / (n - 1);
+
+      // Record geometry for window.__chainCheck
+      window.__chainData.push({
+        chainIndex: i,
+        S,
+        E,
+        P0,
+        L,
+        Lp,
+        d,
+        angle,
+        n,
+        pitch
+      });
+
+      // Chain Div
       const chainDiv = document.createElement("div");
       chainDiv.className = "chain";
       chainDiv.style.position = "absolute";
@@ -504,207 +632,182 @@ function setupChains(prefersReducedMotion) {
       chainDiv.style.transform = `rotate(${angle}deg)`;
       chainDiv.style.overflow = "visible";
       chainDiv.style.pointerEvents = "none";
-      chainDiv.style.zIndex = "3"; // Cards 2, Chain 3, Collars 4
+      chainDiv.style.zIndex = "3";
 
-      // Inner sway container
-      const swayDiv = document.createElement("div");
-      swayDiv.className = "chain__sway";
-      swayDiv.style.transformOrigin = "20px 0";
-      swayDiv.style.width = "40px";
-      swayDiv.style.height = `${Lp}px`;
+      const swayWrapper = document.createElement("div");
+      swayWrapper.className = "chain__sway";
+      swayWrapper.style.transformOrigin = "20px 0";
+      swayWrapper.style.overflow = "visible";
 
-      // SVG holding straight chain links
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("width", "40");
-      svg.setAttribute("height", `${Lp}`);
-      svg.setAttribute("viewBox", `0 0 40 ${Lp}`);
-      svg.style.overflow = "visible";
-
-      // Odd number of links so both ends are narrow
-      const n = 2 * Math.max(1, Math.round(Lp / 40)) + 1;
-      const pitch = Lp / (n - 1);
+      const chainSvg = document.createElementNS(svgNS, "svg");
+      chainSvg.setAttribute("width", "40");
+      chainSvg.setAttribute("height", `${Lp}`);
+      chainSvg.setAttribute("viewBox", `0 0 40 ${Lp}`);
+      chainSvg.style.overflow = "visible";
+      chainSvg.style.display = "block";
 
       const linkElements = [];
       for (let j = 0; j < n; j++) {
-        const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        const linkHref = j % 2 === 0 ? "#link-narrow" : "#link-wide";
-        use.setAttribute("href", linkHref);
-        use.setAttribute("xlink:href", linkHref);
-        use.setAttribute("transform", `translate(20 ${j * pitch}) scale(${LINK_SCALE})`);
-        svg.appendChild(use);
-        linkElements.push(use);
+        const useEl = document.createElementNS(svgNS, "use");
+        const symbolId = (j % 2 === 0) ? "#link-narrow" : "#link-wide";
+        useEl.setAttribute("href", symbolId);
+        useEl.setAttribute("transform", `translate(20 ${j * pitch}) scale(${LINK_SCALE})`);
+        chainSvg.appendChild(useEl);
+        linkElements.push({ el: useEl, baseTranslateY: j * pitch });
       }
 
-      swayDiv.appendChild(svg);
-      chainDiv.appendChild(swayDiv);
+      swayWrapper.appendChild(chainSvg);
+      chainDiv.appendChild(swayWrapper);
       wrapper.appendChild(chainDiv);
 
-      // 3. COLLARS: small metal collars centred on S and E (z-index: 4)
-      function createCollar(point) {
-        const collar = document.createElement("div");
-        collar.className = "chain-collar";
-        collar.style.position = "absolute";
-        collar.style.left = `${point.x - 9}px`;
-        collar.style.top = `${point.y - 6}px`;
-        collar.style.width = "18px";
-        collar.style.height = "12px";
-        collar.style.pointerEvents = "none";
-        collar.style.zIndex = "4";
-        collar.innerHTML = '<svg width="18" height="12" viewBox="0 0 18 12"><rect x="0.75" y="0.75" width="16.5" height="10.5" rx="4" fill="url(#metal)" stroke="#2a2a2a" stroke-width="1.5"/><rect x="3" y="2" width="12" height="2.2" rx="1.1" fill="#fff" opacity=".4"/><circle cx="9" cy="6.8" r="1.4" fill="#2a2a2a"/></svg>';
-        return collar;
-      }
+      // Two Collars per chain
+      const collarS = document.createElement("div");
+      collarS.className = "chain-collar";
+      collarS.style.left = `${S.x - 9}px`;
+      collarS.style.top = `${S.y - 6}px`;
+      collarS.innerHTML = '<svg width="18" height="12" viewBox="0 0 18 12"><rect x="0.75" y="0.75" width="16.5" height="10.5" rx="4" fill="url(#metal)" stroke="#2a2a2a" stroke-width="1.5"/><rect x="3" y="2" width="12" height="2.2" rx="1.1" fill="#fff" opacity=".4"/><circle cx="9" cy="6.8" r="1.4" fill="#2a2a2a"/></svg>';
 
-      const collarS = createCollar(S);
-      const collarE = createCollar(E);
+      const collarE = document.createElement("div");
+      collarE.className = "chain-collar";
+      collarE.style.left = `${E.x - 9}px`;
+      collarE.style.top = `${E.y - 6}px`;
+      collarE.innerHTML = '<svg width="18" height="12" viewBox="0 0 18 12"><rect x="0.75" y="0.75" width="16.5" height="10.5" rx="4" fill="url(#metal)" stroke="#2a2a2a" stroke-width="1.5"/><rect x="3" y="2" width="12" height="2.2" rx="1.1" fill="#fff" opacity=".4"/><circle cx="9" cy="6.8" r="1.4" fill="#2a2a2a"/></svg>';
+
+      gsap.set(collarS, { rotation: upperCollarAngle, transformOrigin: "50% 50%" });
+      gsap.set(collarE, { rotation: lowerCollarAngle, transformOrigin: "50% 50%" });
+
       wrapper.appendChild(collarS);
       wrapper.appendChild(collarE);
 
-      // Reduced motion or missing libraries: display collars and fully built chain still
+      // Animations
       if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-        collarS.style.opacity = "1";
-        collarE.style.opacity = "1";
-        linkElements.forEach((el, idx) => {
-          el.style.opacity = "1";
-          el.setAttribute("transform", `translate(20 ${idx * pitch}) scale(${LINK_SCALE})`);
+        gsap.set([collarS, collarE], { opacity: 1 });
+        linkElements.forEach((l) => gsap.set(l.el, { opacity: 1 }));
+      } else {
+        // (1) Build timeline
+        gsap.set([collarS, collarE], { opacity: 0 });
+        linkElements.forEach((l) => {
+          gsap.set(l.el, {
+            opacity: 0,
+            attr: { transform: `translate(20 ${l.baseTranslateY - 12}) scale(${LINK_SCALE})` }
+          });
         });
-        continue;
-      }
 
-      // 5. ANIMATION: sway amplitude 0.8 degrees, tug 2px, collars fade in over 0.2s
-      let tugged = false;
-      let swayTween = null;
+        let hasTugged = false;
+        function executeTug() {
+          if (hasTugged) return;
+          hasTugged = true;
+          // chain__sway drops 2px and bounces back in 0.4s
+          gsap.timeline()
+            .to(swayWrapper, { y: 2, duration: 0.15, ease: "power1.in" })
+            .to(swayWrapper, { y: 0, duration: 0.25, ease: "bounce.out" });
 
-      function startSway() {
-        if (swayTween) return;
-        swayTween = gsap.fromTo(
-          swayDiv,
-          { rotation: -0.8 },
-          {
-            rotation: 0.8,
-            duration: 2,
-            ease: "sine.inOut",
-            yoyo: true,
-            repeat: -1,
-            transformOrigin: "20px 0"
-          }
-        );
-        activeChainTweens.push(swayTween);
-      }
-
-      function triggerTug() {
-        if (tugged) return;
-        tugged = true;
-
-        const tugTween = gsap.to(swayDiv, {
-          y: 2,
-          duration: 0.2,
-          yoyo: true,
-          repeat: 1,
-          ease: "power1.inOut",
-          onComplete: () => {
-            startSway();
-          }
-        });
-        activeChainTweens.push(tugTween);
-
-        const cardTween = gsap.to([upperCard, lowerCard], {
-          y: "+=2",
-          duration: 0.2,
-          yoyo: true,
-          repeat: 1,
-          ease: "power1.inOut"
-        });
-        activeChainTweens.push(cardTween);
-      }
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: chainDiv,
-          start: "top 85%",
-          end: "bottom 60%",
-          scrub: 0.6,
-          onUpdate: (self) => {
-            if (self.progress >= 0.99 && !tugged) {
-              triggerTug();
-            }
+          // Desktop only: two connected cards move 2px and settle
+          if (!isMobile) {
+            gsap.timeline()
+              .to([upperCard, lowerCard], { y: 2, duration: 0.15, ease: "power1.in" })
+              .to([upperCard, lowerCard], { y: 0, duration: 0.25, ease: "power1.out" });
           }
         }
-      });
 
-      // Collars fade in over 0.2s at the start of the build timeline
-      tl.fromTo(
-        [collarS, collarE],
-        { opacity: 0 },
-        { opacity: 1, duration: 0.2, ease: "none" },
-        0
-      );
+        const buildTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: chainDiv,
+            start: "top 85%",
+            end: "bottom 60%",
+            scrub: 0.6,
+            onLeave: executeTug,
+            onUpdate: (self) => {
+              if (self.progress >= 0.99) executeTug();
+            }
+          }
+        });
 
-      tl.fromTo(
-        linkElements,
-        {
-          opacity: 0,
-          y: (k) => k * pitch - 12
-        },
-        {
-          opacity: 1,
-          y: (k) => k * pitch,
-          stagger: 0.05,
-          ease: "none"
-        },
-        0
-      );
+        activeChainScrollTriggers.push(buildTl.scrollTrigger);
 
-      activeChainTweens.push(tl);
-      if (tl.scrollTrigger) {
-        activeChainTriggers.push(tl.scrollTrigger);
+        // Collars fade in over 0.2s at the start
+        buildTl.to([collarS, collarE], { opacity: 1, duration: 0.2 }, 0);
+
+        // Links build from top to bottom
+        linkElements.forEach((item, idx) => {
+          buildTl.to(
+            item.el,
+            {
+              opacity: 1,
+              attr: { transform: `translate(20 ${item.baseTranslateY}) scale(${LINK_SCALE})` },
+              duration: 0.35,
+              ease: "power2.out"
+            },
+            idx * (0.6 / n)
+          );
+        });
+
+        // (3) Sway loop: chain__sway rotates between -0.8 and 0.8 degrees forever
+        gsap.fromTo(
+          swayWrapper,
+          { rotation: -0.8 },
+          { rotation: 0.8, duration: 2, ease: "sine.inOut", yoyo: true, repeat: -1 }
+        );
       }
     }
-  }
-
-  constructAllChains();
-
-  // FIX 2.E: Recalculate everything after fonts & images load, on resize, and with ResizeObserver
-  window.addEventListener("load", () => {
-    constructAllChains();
-    if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
-  });
-
-  if (document.fonts) {
-    document.fonts.ready.then(() => {
-      constructAllChains();
-      if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
-    });
-  }
-
-  let resizeTimer;
-  window.addEventListener("resize", () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      constructAllChains();
-      if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
-    }, 100);
-  });
-
-  if (typeof ResizeObserver !== "undefined") {
-    const ro = new ResizeObserver(() => {
-      constructAllChains();
-      if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
-    });
-    ro.observe(wrapper);
+  } catch (err) {
+    console.error("Chain build error:", err);
   }
 }
 
 /**
- * Section 4: Remaining body entrance animation (0.1s delay between statement and paragraph)
+ * Setup chains lifecycle with ResizeObserver, image loads, and matchMedia
+ */
+function setupChainsLifecycle(prefersReducedMotion) {
+  buildChains();
+
+  const wrapper = document.getElementById("projects-wrapper");
+  if (wrapper && typeof ResizeObserver !== "undefined") {
+    let roTimeout;
+    const ro = new ResizeObserver(() => {
+      clearTimeout(roTimeout);
+      roTimeout = setTimeout(() => {
+        buildChains();
+        if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+      }, 50);
+    });
+    ro.observe(wrapper);
+  }
+
+  // Media query listener for mobile hanging layout toggle
+  const mediaQuery = window.matchMedia("(max-width: 899px)");
+  mediaQuery.addEventListener("change", () => {
+    buildChains();
+    if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+  });
+
+  window.addEventListener("resize", () => {
+    buildChains();
+    if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+  });
+
+  // Re-measure after images load
+  document.querySelectorAll(".project-card__img").forEach((img) => {
+    if (!img.complete) {
+      img.addEventListener("load", () => {
+        buildChains();
+        if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+      }, { once: true });
+    }
+  });
+}
+
+/**
+ * Statement Section Reveal Animation
  */
 function setupStatementEntrance(prefersReducedMotion) {
   if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
     return;
   }
 
-  const section = document.getElementById("statement");
-  const title = document.getElementById("statement-title");
-  const text = document.getElementById("statement-text");
+  const section = document.querySelector(".statement-section");
+  const title = document.querySelector(".statement-title");
+  const text = document.querySelector(".statement-text");
 
   if (!section || !title || !text) return;
 
@@ -720,46 +823,16 @@ function setupStatementEntrance(prefersReducedMotion) {
 }
 
 /**
- * FIX 3: Paper Stack Entrance Animation
- * When footer enters screen, paper stack drops in over 0.9s from translateY(48px), rotate(3deg) and opacity 0
+ * Global form submission handler
  */
-function setupPaperAnimation(prefersReducedMotion) {
-  const paperStack = document.getElementById("paper-stack");
-  const footer = document.querySelector(".site-footer");
-  if (!paperStack || !footer) return;
-
-  if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-    paperStack.style.opacity = "1";
-    paperStack.style.transform = "none";
-    return;
-  }
-
-  gsap.fromTo(
-    paperStack,
-    {
-      opacity: 0,
-      y: 48,
-      rotation: 3
-    },
-    {
-      opacity: 1,
-      y: 0,
-      rotation: 0,
-      duration: 0.9,
-      ease: "power2.out",
-      scrollTrigger: {
-        trigger: footer,
-        start: "top 80%",
-        toggleActions: "play none none none"
-      }
-    }
-  );
+function submitForm(data) {
+  console.log("Contact form submitted with data:", data);
 }
 
 /**
- * Section 6: Contact form validation, floating labels & submission
+ * Section 5 & 6: Contact Form Validation, Floating Labels, Drop-in Animation
  */
-function setupContactForm() {
+function initContactForm(prefersReducedMotion) {
   const form = document.getElementById("contact-form");
   const successState = document.getElementById("contact-success");
   if (!form) return;
@@ -866,6 +939,38 @@ function setupContactForm() {
       }
     }, 700);
   });
+
+  // Paper stack drop-in entrance animation
+  const paperStack = document.getElementById("paper-stack");
+  const footer = document.querySelector(".site-footer");
+
+  if (paperStack && footer) {
+    if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
+      paperStack.style.opacity = "1";
+      paperStack.style.transform = "none";
+    } else {
+      gsap.fromTo(
+        paperStack,
+        {
+          opacity: 0,
+          y: 48,
+          rotation: 3
+        },
+        {
+          opacity: 1,
+          y: 0,
+          rotation: 0,
+          duration: 0.9,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: footer,
+            start: "top 80%",
+            toggleActions: "play none none none"
+          }
+        }
+      );
+    }
+  }
 }
 
 /**
@@ -895,7 +1000,7 @@ function setupSmoothScroll() {
 }
 
 /**
- * SECTION 6: Smooth Circle Expand Transition from Landing Page to Project Page
+ * Expand Transition from Landing Page to Project Page
  */
 function setupProjectTransitions(prefersReducedMotion) {
   const rows = document.querySelectorAll(".project-row");
@@ -908,7 +1013,6 @@ function setupProjectTransitions(prefersReducedMotion) {
     const targetUrl = `project.html?p=${proj.slug}`;
 
     function handleCardClick(e) {
-      // Keep right-click, middle-click and ctrl/cmd/shift/alt-click default behavior
       if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
         return;
       }
@@ -923,10 +1027,8 @@ function setupProjectTransitions(prefersReducedMotion) {
       const clickX = e.clientX || rect.left + rect.width / 2;
       const clickY = e.clientY || rect.top + rect.height / 2;
 
-      // Project world color
       const worldColor = proj.world === "sage" ? "var(--sage)" : "var(--cream)";
 
-      // Create fixed full-screen layer
       const overlay = document.createElement("div");
       overlay.style.position = "fixed";
       overlay.style.inset = "0";
@@ -939,7 +1041,6 @@ function setupProjectTransitions(prefersReducedMotion) {
       overlay.style.webkitClipPath = `circle(0px at ${clickX}px ${clickY}px)`;
       document.body.appendChild(overlay);
 
-      // Radius that covers the entire screen
       const dx = Math.max(clickX, window.innerWidth - clickX);
       const dy = Math.max(clickY, window.innerHeight - clickY);
       const Rmax = Math.hypot(dx, dy) + 50;
@@ -968,3 +1069,34 @@ function setupProjectTransitions(prefersReducedMotion) {
     }
   });
 }
+
+/**
+ * PART 4: Verification helper for chains
+ */
+window.__chainCheck = () => {
+  if (!window.__chainData || window.__chainData.length === 0) {
+    console.log("No chains recorded.");
+    return;
+  }
+
+  window.__chainData.forEach((cd, index) => {
+    const chainNum = index + 1;
+    const { S, E, P0, Lp, d, n } = cd;
+
+    // Top end of link 0 geometry inside chain div reaches 14.5px backwards from P0
+    const topEnd = { x: P0.x - 14.5 * d.x, y: P0.y - 14.5 * d.y };
+    // Bottom end of link n-1 geometry reaches 14.5px forward from P0 + Lp * d
+    const bottomEnd = { x: P0.x + (Lp + 14.5) * d.x, y: P0.y + (Lp + 14.5) * d.y };
+
+    const distTop = Math.hypot(topEnd.x - S.x, topEnd.y - S.y);
+    const distBottom = Math.hypot(bottomEnd.x - E.x, bottomEnd.y - E.y);
+
+    const ok = distTop <= 4 && distBottom <= 4;
+    if (ok) {
+      console.log(`chain ${chainNum}: OK (${n} links)`);
+    } else {
+      const reason = `top dist: ${distTop.toFixed(2)}px, bottom dist: ${distBottom.toFixed(2)}px`;
+      console.log(`chain ${chainNum}: FAIL (${reason}) (${n} links)`);
+    }
+  });
+};

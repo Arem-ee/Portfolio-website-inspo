@@ -2,15 +2,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <style>html{background:#ece5da} html:not(.is-ready) body{opacity:0} body{transition:opacity .35s ease}</style>
+  <noscript><style>html:not(.is-ready) body{opacity:1}</style></noscript>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Your Name</title>
   <meta name="description" content="Portfolio showcasing selected works with kinetic motion and tactile interaction.">
 
-  <!-- Google Fonts: Space Grotesk (Headings) & Inter (Body) -->
+  <!-- Preload hero character image -->
+  <link rel="preload" as="image" href="assets/character.png" fetchpriority="high">
+
+  <!-- Google Fonts: Space Grotesk (Headings) & Inter (Body) with display=block -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=block" rel="stylesheet">
 
   <!-- Core Stylesheet -->
   <link rel="stylesheet" href="style.css">
@@ -21,7 +26,7 @@
 </head>
 <body>
 
-  <!-- FIX 2.A: Shared Link Drawings SVG Defs (width=0 height=0 position:absolute, never display:none) -->
+  <!-- Hidden SVG for Metallic Interlocking Link Symbols -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
    <defs>
     <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
@@ -39,7 +44,7 @@
     <g id="link-narrow">
      <rect x="-7" y="-29" width="14" height="58" rx="7" fill="none" stroke="#2a2a2a" stroke-width="10"/>
      <rect x="-7" y="-29" width="14" height="58" rx="7" fill="none" stroke="url(#metal)" stroke-width="7"/>
-     <rect x="-7.5" y="-29.5" width="14" height="58" rx="7" fill="none" stroke="url(#shine)" stroke-width="2.5"/>
+     <rect x="-7.5" y="-29.5" width="14" height="58" rx="7" fill="none" stroke="url(#shine)" stroke-width="2"/>
     </g>
    </defs>
   </svg>
@@ -53,9 +58,9 @@
       <a href="#hero" class="nav__logo">Your Name</a>
       <ul class="nav__list">
         <li><a href="index.html#work" class="nav__link">Work</a></li>
-        <li><a href="design.html" class="nav__link">Design</a></li>
+        <li><a href="404.html" class="nav__link">Design</a></li>
         <li><a href="writing.html" class="nav__link">Writing</a></li>
-        <li><a href="about.html" class="nav__link">About</a></li>
+        <li><a href="404.html" class="nav__link">About</a></li>
         <li><a href="index.html#contact" class="nav__link">Contact</a></li>
       </ul>
     </nav>
@@ -110,114 +115,112 @@
 
     <!-- SECTION 2 & 3: PROJECT CARDS (THE ZIGZAG) & ANIMATED CHAINS -->
     <section class="projects-section" id="work">
-      <!-- FIX 2.B: Projects Wrapper with position:relative for accurate offset calculations -->
+      <!-- Projects Wrapper with position:relative containing ONLY the five items -->
       <div class="projects-wrapper" id="projects-wrapper">
-        <div class="projects-container" id="projects">
-          <!-- Card 1: Left -->
-          <article class="project-row project-row--left" data-index="1" data-slug="project-one">
-            <div class="project-card">
-              <div class="project-card__media">
-                <img 
-                  src="assets/project-1.jpg" 
-                  alt="Project One overview" 
-                  class="project-card__img"
-                  width="1280" 
-                  height="800"
-                  loading="lazy"
-                >
-              </div>
+        <!-- Card 1: Left -->
+        <article class="project-row project-row--left" data-index="1" data-slug="project-one">
+          <div class="project-card">
+            <div class="project-card__media">
+              <img 
+                src="assets/project-1.jpg" 
+                alt="Project One overview" 
+                class="project-card__img"
+                width="1280" 
+                height="800"
+                loading="lazy"
+              >
             </div>
-            <div class="project-info">
-              <h3 class="project-info__title">Project One</h3>
-              <p class="project-info__desc">A short plain sentence describing the scope and outcome of this project.</p>
-              <a href="project.html?p=project-one" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
-            </div>
-          </article>
+          </div>
+          <div class="project-info">
+            <h3 class="project-info__title">Project One</h3>
+            <p class="project-info__desc">A short plain sentence describing the scope and outcome of this project.</p>
+            <a href="project.html?p=project-one" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
+          </div>
+        </article>
 
-          <!-- Card 2: Right -->
-          <article class="project-row project-row--right" data-index="2" data-slug="project-two">
-            <div class="project-card">
-              <div class="project-card__media">
-                <img 
-                  src="assets/project-2.jpg" 
-                  alt="Project Two overview" 
-                  class="project-card__img"
-                  width="1280" 
-                  height="800"
-                  loading="lazy"
-                >
-              </div>
+        <!-- Card 2: Right -->
+        <article class="project-row project-row--right" data-index="2" data-slug="project-two">
+          <div class="project-card">
+            <div class="project-card__media">
+              <img 
+                src="assets/project-2.jpg" 
+                alt="Project Two overview" 
+                class="project-card__img"
+                width="1280" 
+                height="800"
+                loading="lazy"
+              >
             </div>
-            <div class="project-info">
-              <h3 class="project-info__title">Project Two</h3>
-              <p class="project-info__desc">A short plain sentence describing the scope and outcome of this project.</p>
-              <a href="project.html?p=project-two" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
-            </div>
-          </article>
+          </div>
+          <div class="project-info">
+            <h3 class="project-info__title">Project Two</h3>
+            <p class="project-info__desc">A short plain sentence describing the scope and outcome of this project.</p>
+            <a href="project.html?p=project-two" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
+          </div>
+        </article>
 
-          <!-- Card 3: Left -->
-          <article class="project-row project-row--left" data-index="3" data-slug="project-three">
-            <div class="project-card">
-              <div class="project-card__media">
-                <img 
-                  src="assets/project-3.jpg" 
-                  alt="Project Three overview" 
-                  class="project-card__img"
-                  width="1280" 
-                  height="800"
-                  loading="lazy"
-                >
-              </div>
+        <!-- Card 3: Left -->
+        <article class="project-row project-row--left" data-index="3" data-slug="project-three">
+          <div class="project-card">
+            <div class="project-card__media">
+              <img 
+                src="assets/project-3.jpg" 
+                alt="Project Three overview" 
+                class="project-card__img"
+                width="1280" 
+                height="800"
+                loading="lazy"
+              >
             </div>
-            <div class="project-info">
-              <h3 class="project-info__title">Project Three</h3>
-              <p class="project-info__desc">A short plain sentence describing the scope and outcome of this project.</p>
-              <a href="project.html?p=project-three" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
-            </div>
-          </article>
+          </div>
+          <div class="project-info">
+            <h3 class="project-info__title">Project Three</h3>
+            <p class="project-info__desc">A short plain sentence describing the scope and outcome of this project.</p>
+            <a href="project.html?p=project-three" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
+          </div>
+        </article>
 
-          <!-- Card 4: Right -->
-          <article class="project-row project-row--right" data-index="4" data-slug="project-four">
-            <div class="project-card">
-              <div class="project-card__media">
-                <img 
-                  src="assets/project-4.jpg" 
-                  alt="Project Four overview" 
-                  class="project-card__img"
-                  width="1280" 
-                  height="800"
-                  loading="lazy"
-                >
-              </div>
+        <!-- Card 4: Right -->
+        <article class="project-row project-row--right" data-index="4" data-slug="project-four">
+          <div class="project-card">
+            <div class="project-card__media">
+              <img 
+                src="assets/project-4.jpg" 
+                alt="Project Four overview" 
+                class="project-card__img"
+                width="1280" 
+                height="800"
+                loading="lazy"
+              >
             </div>
-            <div class="project-info">
-              <h3 class="project-info__title">Project Four</h3>
-              <p class="project-info__desc">A short plain sentence describing the scope and outcome of this project.</p>
-              <a href="project.html?p=project-four" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
-            </div>
-          </article>
+          </div>
+          <div class="project-info">
+            <h3 class="project-info__title">Project Four</h3>
+            <p class="project-info__desc">A short plain sentence describing the scope and outcome of this project.</p>
+            <a href="project.html?p=project-four" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
+          </div>
+        </article>
 
-          <!-- Card 5: Left -->
-          <article class="project-row project-row--left" data-index="5" data-slug="project-five">
-            <div class="project-card">
-              <div class="project-card__media">
-                <img 
-                  src="assets/project-5.jpg" 
-                  alt="Project Five overview" 
-                  class="project-card__img"
-                  width="1280" 
-                  height="800"
-                  loading="lazy"
-                >
-              </div>
+        <!-- Card 5: Left -->
+        <article class="project-row project-row--left" data-index="5" data-slug="project-five">
+          <div class="project-card">
+            <div class="project-card__media">
+              <img 
+                src="assets/project-5.jpg" 
+                alt="Project Five overview" 
+                class="project-card__img"
+                width="1280" 
+                height="800"
+                loading="lazy"
+              >
             </div>
-            <div class="project-info">
-              <h3 class="project-info__title">Project Five</h3>
-              <p class="project-info__desc">A short plain sentence describing the scope and outcome of this project.</p>
-              <a href="project.html?p=project-five" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
-            </div>
-          </article>
-        </div>
+          </div>
+          <div class="project-info">
+            <h3 class="project-info__title">Project Five</h3>
+            <p class="project-info__desc">A short plain sentence describing the scope and outcome of this project.</p>
+            <a href="project.html?p=project-five" class="project-info__link">View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span></a>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -244,7 +247,7 @@
               <h4 class="footer-nav-title">Pages</h4>
               <ul class="footer-link-list" id="footer-pages-list">
                 <li><a href="index.html#work" class="footer-link">Work</a></li>
-                <li><a href="404.html" class="footer-link">Writing</a></li>
+                <li><a href="writing.html" class="footer-link">Writing</a></li>
                 <li><a href="404.html" class="footer-link">About</a></li>
                 <li><a href="#contact" class="footer-link">Contact</a></li>
               </ul>
@@ -342,9 +345,8 @@
     </footer>
   </main>
 
-  <!-- Content & Shared Scripts -->
+  <!-- Site Content Data -->
   <script src="content.js"></script>
-  <script src="shared.js"></script>
 
   <!-- Main JavaScript File -->
   <script type="module" src="main.js"></script>
