@@ -23,6 +23,11 @@
   /* Soft Shadows */
   --shadow-card: 0 14px 34px -10px rgba(34, 33, 30, 0.08);
   --shadow-hover: 0 22px 46px -12px rgba(34, 33, 30, 0.13);
+
+  /* Hero Cat Positioning Variables */
+  --cat-left: 64%;
+  --cat-height: 15%;
+  --cat-bottom: 1%;
 }
 
 /* Base Reset & Box Sizing */
@@ -232,6 +237,17 @@ body {
   filter: none;
 }
 
+.hero__figure {
+  position: relative;
+  height: 100%;
+  width: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+  will-change: transform;
+}
+
 .hero__character-img {
   height: 100%;
   width: auto;
@@ -244,12 +260,29 @@ body {
   filter: none;
 }
 
+.hero__cat-img {
+  position: absolute;
+  left: var(--cat-left);
+  bottom: var(--cat-bottom);
+  height: var(--cat-height);
+  width: auto;
+  object-fit: contain;
+  display: block;
+  z-index: 3; /* In front of character's feet */
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  pointer-events: none;
+}
+
 .hero__shadow {
   position: absolute;
   bottom: -6px;
-  left: 50%;
+  left: calc(50% + 22px);
   transform: translateX(-50%);
-  width: 220px;
+  width: 330px; /* ~1.5x wider to cover both character and cat */
   height: 24px;
   background: radial-gradient(ellipse at center, rgba(34, 33, 30, 0.35) 0%, rgba(34, 33, 30, 0) 75%);
   border-radius: 50%;
@@ -1022,6 +1055,15 @@ body {
     pointer-events: none;
   }
 
+  .hero__figure {
+    height: 100%;
+    width: auto;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
   .hero__character-img {
     height: 100%;
     width: auto;
@@ -1029,10 +1071,22 @@ body {
     object-fit: contain;
   }
 
+  .hero__cat-img {
+    position: absolute;
+    left: var(--cat-left);
+    bottom: var(--cat-bottom);
+    height: var(--cat-height);
+    width: auto;
+    object-fit: contain;
+    z-index: 3;
+    pointer-events: none;
+  }
+
   .hero__shadow {
-    width: 160px;
+    width: 240px; /* ~1.5x wider to cover both character and cat */
     height: 18px;
     bottom: -6px;
+    left: calc(50% + 16px);
   }
 
   /* Two small text lines under character */

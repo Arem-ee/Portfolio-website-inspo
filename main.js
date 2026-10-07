@@ -122,11 +122,30 @@ document.addEventListener("DOMContentLoaded", () => {
   populateSiteContent();
   setupScrollProgress();
 
-  // Hero background-removal fallback on character before reveal animation
+  // Hero background-removal fallback on character and cat before reveal animation
   const characterImg = document.querySelector(".hero__character-img");
+  const catImg = document.querySelector(".hero__cat-img");
+
+  let charReady = false;
+  let catReady = !catImg;
+
+  function onHeroReady() {
+    if (charReady && catReady) {
+      setupHeroInteractions(prefersReducedMotion);
+    }
+  }
+
   prepareCharacterImage(characterImg, () => {
-    setupHeroInteractions(prefersReducedMotion);
+    charReady = true;
+    onHeroReady();
   });
+
+  if (catImg) {
+    prepareCharacterImage(catImg, () => {
+      catReady = true;
+      onHeroReady();
+    });
+  }
 
   setupProjectEntrance(prefersReducedMotion);
   setupChains(prefersReducedMotion);
@@ -376,6 +395,7 @@ function setupHeroInteractions(prefersReducedMotion) {
   const headlineRight = document.querySelector(".hero__headline-col--right");
   const character = document.querySelector(".hero__character-img");
   const characterWrapper = document.querySelector(".hero__character-wrapper");
+  const figure = document.querySelector(".hero__figure") || character;
   const shadow = document.querySelector(".hero__shadow");
   const scrollHint = document.querySelector(".hero__scroll-hint");
 
@@ -386,6 +406,7 @@ function setupHeroInteractions(prefersReducedMotion) {
     if (headlineLeft) headlineLeft.style.opacity = "1";
     if (headlineRight) headlineRight.style.opacity = "1";
     if (characterWrapper) characterWrapper.style.opacity = "1";
+    if (figure) figure.style.opacity = "1";
     if (shadow) shadow.style.opacity = "1";
     return;
   }
@@ -399,8 +420,8 @@ function setupHeroInteractions(prefersReducedMotion) {
       .fromTo(shadow, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.8 }, "-=0.7")
       .fromTo(scrollHint, { opacity: 0 }, { opacity: 1, duration: 0.5 }, "-=0.3");
 
-    // Float loop (about 14px up and down, 5 to 6s, sine ease-in-out, 1deg rotation)
-    gsap.to(character, {
+    // Float loop (about 14px up and down, 5 to 6s, sine ease-in-out, 1deg rotation) applied to figure
+    gsap.to(figure, {
       y: -14,
       rotation: 1,
       duration: 2.7,
@@ -409,7 +430,7 @@ function setupHeroInteractions(prefersReducedMotion) {
       repeat: -1
     });
 
-    // In-sync floor shadow breathing: shrinks & lightens as character rises, darkens as it descends
+    // In-sync floor shadow breathing: shrinks & lightens as figure rises, darkens as it descends
     gsap.to(shadow, {
       scaleX: 0.82,
       scaleY: 0.82,
