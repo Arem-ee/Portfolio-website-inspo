@@ -137,9 +137,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * Automatic background-removal fallback
- * Draws character onto canvas, averages 4 corners, flood-fills background to transparent,
- * softens halo edges, and removes baked-in floor shadow under feet.
+ * Automatic background-removal fallback for flat pure white background
+ * Draws character onto canvas, flood-fills inward from 4 corners within tolerance
+ * of 18 per channel of pure white (255,255,255), and softens the edge by lowering
+ * the alpha of perimeter pixels by ~35%.
  */
 function prepareCharacterImage(imgEl, onReady) {
   if (!imgEl) return onReady();
@@ -154,6 +155,8 @@ function prepareCharacterImage(imgEl, onReady) {
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return onReady();
+
       ctx.drawImage(imgEl, 0, 0);
 
       const imgData = ctx.getImageData(0, 0, w, h);
@@ -172,47 +175,28 @@ function prepareCharacterImage(imgEl, onReady) {
         return onReady();
       }
 
-      // Read average colour of 4 corner pixels
-      let rSum = 0, gSum = 0, bSum = 0;
-      cIndices.forEach((idx) => {
-        rSum += data[idx];
-        gSum += data[idx + 1];
-        bSum += data[idx + 2];
-      });
-      const bgR = rSum / 4;
-      const bgG = gSum / 4;
-      const bgB = bSum / 4;
+      const tolerance = 18;
+      // Pixel is connected white background if within tolerance of 18 per channel of pure white (255, 255, 255)
+      function isWhiteBg(idx) {
+        return (
+          data[idx] >= 255 - tolerance &&
+          data[idx + 1] >= 255 - tolerance &&
+          data[idx + 2] >= 255 - tolerance
+        );
+      }
 
-      const tolerance = 28;
       const visited = new Uint8Array(w * h);
-      const queue = [0, w - 1, (h - 1) * w, (h - 1) * w + (w - 1)];
-      visited[0] = 1;
-      visited[w - 1] = 1;
-      visited[(h - 1) * w] = 1;
-      visited[(h - 1) * w + (w - 1)] = 1;
+      const queue = [];
+      const cornerCoords = [0, w - 1, (h - 1) * w, (h - 1) * w + (w - 1)];
 
-      function matchesBg(idx) {
-        const dr = Math.abs(data[idx] - bgR);
-        const dg = Math.abs(data[idx + 1] - bgG);
-        const db = Math.abs(data[idx + 2] - bgB);
-        return dr <= tolerance && dg <= tolerance && db <= tolerance;
-      }
+      cornerCoords.forEach((pos) => {
+        if (isWhiteBg(pos * 4)) {
+          visited[pos] = 1;
+          queue.push(pos);
+        }
+      });
 
-      // Check baked-in ground shadow near bottom
-      const floorThresholdY = Math.floor(h * 0.76);
-      function isFloorShadowPixel(cy, idx) {
-        if (cy < floorThresholdY) return false;
-        const r = data[idx];
-        const g = data[idx + 1];
-        const b = data[idx + 2];
-        const maxChroma = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
-        const diffR = bgR - r;
-        const diffG = bgG - g;
-        const diffB = bgB - b;
-        return maxChroma < 26 && diffR >= -12 && diffR < 70 && diffG >= -12 && diffG < 70 && diffB >= -12 && diffB < 70;
-      }
-
-      // Flood-fill inward from all four corners
+      // Flood-fill inward from four corners
       let head = 0;
       while (head < queue.length) {
         const curr = queue[head++];
@@ -220,7 +204,7 @@ function prepareCharacterImage(imgEl, onReady) {
         const cy = Math.floor(curr / w);
         const pIdx = curr * 4;
 
-        data[pIdx + 3] = 0; // Set reached pixel transparent
+        data[pIdx + 3] = 0; // Make connected white pixel transparent
 
         // Check 4-connected neighbors
         const nList = [];
@@ -233,16 +217,14 @@ function prepareCharacterImage(imgEl, onReady) {
           const n = nList[i];
           if (!visited[n]) {
             visited[n] = 1;
-            const ny = Math.floor(n / w);
-            const nIdx = n * 4;
-            if (matchesBg(nIdx) || isFloorShadowPixel(ny, nIdx)) {
+            if (isWhiteBg(n * 4)) {
               queue.push(n);
             }
           }
         }
       }
 
-      // Soften edge: remaining pixels touching transparent pixels have alpha reduced by 40%
+      // Soften edge: remaining pixels touching transparent pixels have alpha reduced by ~35%
       for (let y = 1; y < h - 1; y++) {
         for (let x = 1; x < w - 1; x++) {
           const idx = (y * w + x) * 4;
@@ -254,7 +236,7 @@ function prepareCharacterImage(imgEl, onReady) {
               data[(y * w + (x + 1)) * 4 + 3] === 0;
 
             if (hasTransparentNeighbor) {
-              data[idx + 3] = Math.round(data[idx + 3] * 0.6);
+              data[idx + 3] = Math.round(data[idx + 3] * 0.65);
             }
           }
         }
