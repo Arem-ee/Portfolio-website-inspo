@@ -11,110 +11,9 @@
 const LINK_SCALE = 0.5;
 
 /**
- * FIX 6: Global Site Content with Neutral Placeholders
- * Modify this object to change any textual content across the entire page.
+ * Global Site Content from content.js (window.SITE)
  */
-const SITE_CONTENT = {
-  brand: {
-    name: "Your Name",
-    description: "A short sentence describing your creative perspective and practice."
-  },
-  navigation: [
-    { label: "Work", href: "#projects" },
-    { label: "About", href: "#statement" },
-    { label: "Contact", href: "#contact" }
-  ],
-  hero: {
-    headlineLeft: "YOUR",
-    headlineRight: "NAME",
-    subtextLeft: "A concise introductory sentence describing your perspective.",
-    subtextRight: "A second concise sentence highlighting your core practice."
-  },
-  projects: [
-    {
-      id: 1,
-      title: "Project One",
-      description: "A short plain sentence describing the scope and outcome of this project.",
-      linkText: "View project",
-      url: "#",
-      image: "assets/project-1.jpg",
-      alt: "Project One overview"
-    },
-    {
-      id: 2,
-      title: "Project Two",
-      description: "A short plain sentence describing the scope and outcome of this project.",
-      linkText: "View project",
-      url: "#",
-      image: "assets/project-2.jpg",
-      alt: "Project Two overview"
-    },
-    {
-      id: 3,
-      title: "Project Three",
-      description: "A short plain sentence describing the scope and outcome of this project.",
-      linkText: "View project",
-      url: "#",
-      image: "assets/project-3.jpg",
-      alt: "Project Three overview"
-    },
-    {
-      id: 4,
-      title: "Project Four",
-      description: "A short plain sentence describing the scope and outcome of this project.",
-      linkText: "View project",
-      url: "#",
-      image: "assets/project-4.jpg",
-      alt: "Project Four overview"
-    },
-    {
-      id: 5,
-      title: "Project Five",
-      description: "A short plain sentence describing the scope and outcome of this project.",
-      linkText: "View project",
-      url: "#",
-      image: "assets/project-5.jpg",
-      alt: "Project Five overview"
-    }
-  ],
-  remainingBody: {
-    statement: "A clear two-line statement summarizing your perspective.",
-    paragraph: "A single paragraph of placeholder text offering further detail about your methodology, principles, and collaborative approach without extraneous decorative elements."
-  },
-  footer: {
-    description: "A brief concluding sentence about your work and availability.",
-    pages: [
-      { label: "Work", href: "#projects" },
-      { label: "About", href: "#statement" },
-      { label: "Contact", href: "#contact" }
-    ],
-    social: [
-      { label: "Link One", href: "#" },
-      { label: "Link Two", href: "#" },
-      { label: "Link Three", href: "#" }
-    ],
-    copyrightName: "Your Name. All rights reserved."
-  },
-  contact: {
-    options: [
-      { value: "option-1", label: "Option One" },
-      { value: "option-2", label: "Option Two" },
-      { value: "option-3", label: "Option Three" },
-      { value: "option-4", label: "Option Four" }
-    ],
-    successTitle: "Message received.",
-    successBody: "Thank you for reaching out. We will respond shortly."
-  }
-};
-
-/**
- * Handle form submission
- * @param {Object} data - Cleaned form field values
- */
-function submitForm(data) {
-  // TODO: Plug in your real backend API or form endpoint here (e.g. fetch('/api/contact', ...))
-  console.log("Contact form submitted with data:", data);
-}
+const SITE_CONTENT = window.SITE || {};
 
 document.addEventListener("DOMContentLoaded", () => {
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -150,9 +49,9 @@ document.addEventListener("DOMContentLoaded", () => {
   setupProjectEntrance(prefersReducedMotion);
   setupChains(prefersReducedMotion);
   setupStatementEntrance(prefersReducedMotion);
-  setupPaperAnimation(prefersReducedMotion);
-  setupContactForm();
+  initContactForm(prefersReducedMotion);
   setupSmoothScroll();
+  setupProjectTransitions(prefersReducedMotion);
 });
 
 /**
@@ -197,64 +96,86 @@ function prepareCharacterImage(imgEl, onReady) {
       const tolerance = 18;
       // Pixel is connected white background if within tolerance of 18 per channel of pure white (255, 255, 255)
       function isWhiteBg(idx) {
-        return (
-          data[idx] >= 255 - tolerance &&
-          data[idx + 1] >= 255 - tolerance &&
-          data[idx + 2] >= 255 - tolerance
-        );
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const a = data[idx + 3];
+        if (a < 10) return false;
+        return (255 - r <= tolerance) && (255 - g <= tolerance) && (255 - b <= tolerance);
       }
 
       const visited = new Uint8Array(w * h);
-      const queue = [];
-      const cornerCoords = [0, w - 1, (h - 1) * w, (h - 1) * w + (w - 1)];
-
-      cornerCoords.forEach((pos) => {
-        if (isWhiteBg(pos * 4)) {
-          visited[pos] = 1;
-          queue.push(pos);
-        }
-      });
-
-      // Flood-fill inward from four corners
+      const queue = new Int32Array(w * h);
       let head = 0;
-      while (head < queue.length) {
+      let tail = 0;
+
+      function pushPixel(px, py) {
+        if (px < 0 || px >= w || py < 0 || py >= h) return;
+        const i = py * w + px;
+        if (visited[i]) return;
+        visited[i] = 1;
+        if (isWhiteBg(i * 4)) {
+          queue[tail++] = i;
+        }
+      }
+
+      // Seed all border pixels
+      for (let x = 0; x < w; x++) {
+        pushPixel(x, 0);
+        pushPixel(x, h - 1);
+      }
+      for (let y = 0; y < h; y++) {
+        pushPixel(0, y);
+        pushPixel(w - 1, y);
+      }
+
+      // 4-way BFS flood-fill inward
+      while (head < tail) {
         const curr = queue[head++];
         const cx = curr % w;
         const cy = Math.floor(curr / w);
-        const pIdx = curr * 4;
 
-        data[pIdx + 3] = 0; // Make connected white pixel transparent
+        const neighbors = [
+          [cx + 1, cy],
+          [cx - 1, cy],
+          [cx, cy + 1],
+          [cx, cy - 1]
+        ];
 
-        // Check 4-connected neighbors
-        const nList = [];
-        if (cx > 0) nList.push(curr - 1);
-        if (cx < w - 1) nList.push(curr + 1);
-        if (cy > 0) nList.push(curr - w);
-        if (cy < h - 1) nList.push(curr + w);
-
-        for (let i = 0; i < nList.length; i++) {
-          const n = nList[i];
-          if (!visited[n]) {
-            visited[n] = 1;
-            if (isWhiteBg(n * 4)) {
-              queue.push(n);
+        for (let i = 0; i < 4; i++) {
+          const nx = neighbors[i][0];
+          const ny = neighbors[i][1];
+          if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+            const nIdx = ny * w + nx;
+            if (!visited[nIdx]) {
+              visited[nIdx] = 1;
+              if (isWhiteBg(nIdx * 4)) {
+                queue[tail++] = nIdx;
+              }
             }
           }
         }
       }
 
-      // Soften edge: remaining pixels touching transparent pixels have alpha reduced by ~35%
+      // Mark cleared pixels
+      for (let i = 0; i < tail; i++) {
+        const pIdx = queue[i] * 4;
+        data[pIdx + 3] = 0;
+      }
+
+      // Perimeter softening: lower alpha of pixels adjacent to cleared pixels by ~35%
       for (let y = 1; y < h - 1; y++) {
         for (let x = 1; x < w - 1; x++) {
-          const idx = (y * w + x) * 4;
+          const i = y * w + x;
+          const idx = i * 4;
           if (data[idx + 3] > 0) {
-            const hasTransparentNeighbor =
-              data[((y - 1) * w + x) * 4 + 3] === 0 ||
-              data[((y + 1) * w + x) * 4 + 3] === 0 ||
-              data[(y * w + (x - 1)) * 4 + 3] === 0 ||
-              data[(y * w + (x + 1)) * 4 + 3] === 0;
+            const hasClearedNeighbor =
+              data[(idx - 4) + 3] === 0 ||
+              data[(idx + 4) + 3] === 0 ||
+              data[(idx - w * 4) + 3] === 0 ||
+              data[(idx + w * 4) + 3] === 0;
 
-            if (hasTransparentNeighbor) {
+            if (hasClearedNeighbor) {
               data[idx + 3] = Math.round(data[idx + 3] * 0.65);
             }
           }
@@ -264,212 +185,219 @@ function prepareCharacterImage(imgEl, onReady) {
       ctx.putImageData(imgData, 0, 0);
       imgEl.src = canvas.toDataURL("image/png");
       onReady();
-    } catch (err) {
-      console.warn("Transparency fallback error, showing original:", err);
+    } catch (e) {
+      console.warn("Canvas background processing skipped due to CORS/security context:", e);
       onReady();
     }
   }
 
-  if (imgEl.complete && imgEl.naturalWidth > 0) {
+  if (imgEl.complete && imgEl.naturalWidth !== 0) {
     process();
   } else {
     imgEl.addEventListener("load", process, { once: true });
-    imgEl.addEventListener("error", () => onReady(), { once: true });
+    imgEl.addEventListener("error", onReady, { once: true });
   }
 }
 
 /**
- * Injects content from SITE_CONTENT into the DOM
+ * Populate dynamic placeholder data from content.js
  */
 function populateSiteContent() {
-  const logoEl = document.querySelector(".nav__logo");
-  if (logoEl) logoEl.textContent = SITE_CONTENT.brand.name;
+  const brand = SITE_CONTENT.brand || {};
+  const hero = SITE_CONTENT.hero || {};
+  const remaining = SITE_CONTENT.remainingBody || {};
+  const projects = SITE_CONTENT.projects || [];
+  const footer = SITE_CONTENT.footer || {};
 
-  const navLinks = document.querySelectorAll(".nav__link");
-  if (navLinks.length >= SITE_CONTENT.navigation.length) {
-    SITE_CONTENT.navigation.forEach((item, idx) => {
-      navLinks[idx].textContent = item.label;
-      navLinks[idx].setAttribute("href", item.href);
-    });
+  const logo = document.querySelector(".nav__logo");
+  if (logo && brand.name) {
+    logo.textContent = brand.name;
+    document.title = brand.name;
   }
 
-  const titleLeft = document.getElementById("hero-title-left");
-  if (titleLeft) titleLeft.textContent = SITE_CONTENT.hero.headlineLeft;
+  const footerLogo = document.querySelector(".footer-logo");
+  if (footerLogo && brand.name) {
+    footerLogo.textContent = brand.name;
+  }
 
-  const titleRight = document.getElementById("hero-title-right");
-  if (titleRight) titleRight.textContent = SITE_CONTENT.hero.headlineRight;
+  const footerSentence = document.querySelector(".footer-sentence");
+  if (footerSentence && footer.description) {
+    footerSentence.textContent = footer.description;
+  }
 
-  const subtextLeft = document.getElementById("hero-subtext-left");
-  if (subtextLeft) subtextLeft.textContent = SITE_CONTENT.hero.subtextLeft;
+  const copyrightText = document.getElementById("copyright-text");
+  if (copyrightText && brand.name) {
+    const year = new Date().getFullYear();
+    copyrightText.innerHTML = `&copy; <span id="copyright-year">${year}</span> ${footer.copyrightName || `${brand.name}. All rights reserved.`}`;
+  }
 
-  const subtextRight = document.getElementById("hero-subtext-right");
-  if (subtextRight) subtextRight.textContent = SITE_CONTENT.hero.subtextRight;
+  const hTitleLeft = document.getElementById("hero-title-left");
+  const hTitleRight = document.getElementById("hero-title-right");
+  const hSubLeft = document.getElementById("hero-subtext-left");
+  const hSubRight = document.getElementById("hero-subtext-right");
 
-  const projectRows = document.querySelectorAll(".project-row");
-  projectRows.forEach((row, index) => {
-    const proj = SITE_CONTENT.projects[index];
-    if (!proj) return;
+  if (hTitleLeft && hero.headlineLeft) hTitleLeft.textContent = hero.headlineLeft;
+  if (hTitleRight && hero.headlineRight) hTitleRight.textContent = hero.headlineRight;
+  if (hSubLeft && hero.subtextLeft) hSubLeft.textContent = hero.subtextLeft;
+  if (hSubRight && hero.subtextRight) hSubRight.textContent = hero.subtextRight;
+
+  const stTitle = document.getElementById("statement-title");
+  const stText = document.getElementById("statement-text");
+  if (stTitle && remaining.statement) stTitle.textContent = remaining.statement;
+  if (stText && remaining.paragraph) stText.textContent = remaining.paragraph;
+
+  const rows = document.querySelectorAll(".project-row");
+  rows.forEach((row, idx) => {
+    const pData = projects[idx];
+    if (!pData) return;
+
+    row.setAttribute("data-slug", pData.slug);
     const titleEl = row.querySelector(".project-info__title");
     const descEl = row.querySelector(".project-info__desc");
     const linkEl = row.querySelector(".project-info__link");
     const imgEl = row.querySelector(".project-card__img");
 
-    if (titleEl) titleEl.textContent = proj.title;
-    if (descEl) descEl.textContent = proj.description;
+    if (titleEl) titleEl.textContent = pData.title;
+    if (descEl) descEl.textContent = pData.summary;
     if (linkEl) {
-      linkEl.href = proj.url || "#";
-      linkEl.innerHTML = `${proj.linkText || "View project"} <span class="project-info__arrow" aria-hidden="true">&rarr;</span>`;
+      linkEl.href = `project.html?p=${pData.slug}`;
+      linkEl.innerHTML = `View project <span class="project-info__arrow" aria-hidden="true">&rarr;</span>`;
     }
-    if (imgEl && proj.image) {
-      imgEl.src = proj.image;
-      imgEl.alt = proj.alt || proj.title;
+    if (imgEl && pData.image) {
+      imgEl.src = pData.image;
+      imgEl.alt = pData.alt || `${pData.title} overview`;
     }
   });
-
-  const statementTitle = document.getElementById("statement-title");
-  if (statementTitle) statementTitle.textContent = SITE_CONTENT.remainingBody.statement;
-
-  const statementText = document.getElementById("statement-text");
-  if (statementText) statementText.textContent = SITE_CONTENT.remainingBody.paragraph;
-
-  const footerLogo = document.querySelector(".footer-logo");
-  if (footerLogo) footerLogo.textContent = SITE_CONTENT.brand.name;
-
-  const footerSentence = document.querySelector(".footer-sentence");
-  if (footerSentence) footerSentence.textContent = SITE_CONTENT.footer.description;
-
-  const footerPagesList = document.getElementById("footer-pages-list");
-  if (footerPagesList) {
-    footerPagesList.innerHTML = SITE_CONTENT.footer.pages
-      .map((item) => `<li><a href="${item.href}" class="footer-link">${item.label}</a></li>`)
-      .join("");
-  }
-
-  const footerSocialList = document.getElementById("footer-social-list");
-  if (footerSocialList) {
-    footerSocialList.innerHTML = SITE_CONTENT.footer.social
-      .map((item) => `<li><a href="${item.href}" class="footer-link">${item.label}</a></li>`)
-      .join("");
-  }
-
-  const copyrightYear = document.getElementById("copyright-year");
-  if (copyrightYear) copyrightYear.textContent = new Date().getFullYear();
-
-  const copyrightText = document.getElementById("copyright-text");
-  if (copyrightText) copyrightText.textContent = ` © ${new Date().getFullYear()} ${SITE_CONTENT.footer.copyrightName}`;
-
-  const needSelect = document.getElementById("field-need");
-  if (needSelect) {
-    needSelect.innerHTML = SITE_CONTENT.contact.options
-      .map((opt) => `<option value="${opt.value}">${opt.label}</option>`)
-      .join("");
-  }
 }
 
 /**
- * Thin scroll progress indicator at top of page
+ * Top reading progress bar synchronized with window scroll
  */
 function setupScrollProgress() {
   const progressBar = document.getElementById("scroll-progress");
   if (!progressBar) return;
 
-  function updateProgress() {
+  window.addEventListener("scroll", () => {
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    if (scrollHeight > 0) {
-      const percentage = (scrollTop / scrollHeight) * 100;
-      progressBar.style.width = `${percentage}%`;
-    }
-  }
-
-  window.addEventListener("scroll", updateProgress, { passive: true });
-  updateProgress();
+    const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progressBar.style.width = `${progress}%`;
+    progressBar.setAttribute("aria-valuenow", Math.round(progress));
+  }, { passive: true });
 }
 
 /**
- * Section 1: Hero entrance and floating physics simulation
+ * Hero section animations, float loops, and responsive mouse parallax
  */
 function setupHeroInteractions(prefersReducedMotion) {
-  const nav = document.querySelector(".site-header");
-  const headlineLeft = document.querySelector(".hero__headline-col--left");
-  const headlineRight = document.querySelector(".hero__headline-col--right");
-  const character = document.querySelector(".hero__character-img");
-  const characterWrapper = document.querySelector(".hero__character-wrapper");
-  const figure = document.querySelector(".hero__figure") || character;
-  const shadow = document.querySelector(".hero__shadow");
-  const scrollHint = document.querySelector(".hero__scroll-hint");
+  const heroWrapper = document.querySelector(".hero__character-wrapper");
+  const heroFigure = document.querySelector(".hero__figure");
+  const characterImg = document.querySelector(".hero__character-img");
+  const catImg = document.querySelector(".hero__cat-img");
+  const heroShadow = document.querySelector(".hero__shadow");
+  const titleLeft = document.getElementById("hero-title-left");
+  const titleRight = document.getElementById("hero-title-right");
+  const subLeft = document.getElementById("hero-subtext-left");
+  const subRight = document.getElementById("hero-subtext-right");
 
-  if (!character || !shadow) return;
-
-  if (prefersReducedMotion) {
-    if (nav) nav.style.opacity = "1";
-    if (headlineLeft) headlineLeft.style.opacity = "1";
-    if (headlineRight) headlineRight.style.opacity = "1";
-    if (characterWrapper) characterWrapper.style.opacity = "1";
-    if (figure) figure.style.opacity = "1";
-    if (shadow) shadow.style.opacity = "1";
+  if (prefersReducedMotion || typeof gsap === "undefined") {
+    if (heroFigure) heroFigure.style.opacity = "1";
+    if (characterImg) characterImg.style.opacity = "1";
+    if (catImg) catImg.style.opacity = "1";
+    if (heroShadow) heroShadow.style.opacity = "0.7";
     return;
   }
 
-  if (typeof gsap !== "undefined") {
-    const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+  // Entrance Timeline
+  const entranceTl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
-    tl.fromTo(nav, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 })
-      .fromTo([headlineLeft, headlineRight], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.15 }, "-=0.3")
-      .fromTo(characterWrapper, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.9 }, "-=0.6")
-      .fromTo(shadow, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.8 }, "-=0.7")
-      .fromTo(scrollHint, { opacity: 0 }, { opacity: 1, duration: 0.5 }, "-=0.3");
+  entranceTl
+    .fromTo([titleLeft, titleRight], { opacity: 0, y: 32 }, { opacity: 1, y: 0, duration: 0.9, stagger: 0.15 })
+    .fromTo([subLeft, subRight], { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.15 }, "-=0.6")
+    .fromTo(heroFigure, { opacity: 0, scale: 0.96, y: 24 }, { opacity: 1, scale: 1, y: 0, duration: 1.1, ease: "power3.out" }, "-=0.7")
+    .fromTo(heroShadow, { opacity: 0, scale: 0.7 }, { opacity: 0.7, scale: 1, duration: 1.1, ease: "power3.out" }, "-=1.1");
 
-    // Float loop (about 14px up and down, 5 to 6s, sine ease-in-out, 1deg rotation) applied to figure
-    gsap.to(figure, {
-      y: -14,
-      rotation: 1,
-      duration: 2.7,
-      ease: "sine.inOut",
-      yoyo: true,
-      repeat: -1
+  // Idle Floating Animation on heroFigure (character + cat together)
+  const floatTl = gsap.timeline({ repeat: -1, yoyo: true });
+  floatTl.to(heroFigure, {
+    y: "-=16",
+    duration: 3.2,
+    ease: "sine.inOut"
+  });
+
+  // Shadow pulses opposite to the float
+  gsap.to(heroShadow, {
+    scaleX: 0.85,
+    scaleY: 0.85,
+    opacity: 0.45,
+    duration: 3.2,
+    repeat: -1,
+    yoyo: true,
+    ease: "sine.inOut"
+  });
+
+  // Subtle Mouse Parallax inside Hero Section
+  const heroSection = document.getElementById("hero");
+  if (heroSection) {
+    heroSection.addEventListener("mousemove", (e) => {
+      const rect = heroSection.getBoundingClientRect();
+      const xPercent = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+      const yPercent = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+
+      gsap.to(heroWrapper, {
+        x: xPercent * 14,
+        y: yPercent * 8,
+        duration: 0.8,
+        ease: "power1.out"
+      });
+
+      gsap.to([titleLeft, titleRight], {
+        x: xPercent * -6,
+        duration: 0.8,
+        ease: "power1.out"
+      });
     });
 
-    // In-sync floor shadow breathing: shrinks & lightens as figure rises, darkens as it descends
-    gsap.to(shadow, {
-      scaleX: 0.82,
-      scaleY: 0.82,
-      opacity: 0.2,
-      duration: 2.7,
-      ease: "sine.inOut",
-      yoyo: true,
-      repeat: -1
+    heroSection.addEventListener("mouseleave", () => {
+      gsap.to([heroWrapper, titleLeft, titleRight], {
+        x: 0,
+        y: 0,
+        duration: 1,
+        ease: "power2.out"
+      });
     });
   }
 }
 
 /**
- * Section 2: Project card entrance on scroll
+ * Zigzag Project Rows Reveal Animation
  */
 function setupProjectEntrance(prefersReducedMotion) {
   if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
+    document.querySelectorAll(".project-row").forEach((el) => {
+      el.style.opacity = "1";
+      el.style.transform = "none";
+    });
     return;
   }
-
-  gsap.registerPlugin(ScrollTrigger);
 
   const rows = document.querySelectorAll(".project-row");
   rows.forEach((row) => {
     const card = row.querySelector(".project-card");
-    const isLeft = row.classList.contains("project-row--left");
-    const xOffset = isLeft ? -50 : 50;
+    const info = row.querySelector(".project-info");
 
     gsap.fromTo(
-      card,
-      { opacity: 0, x: xOffset },
+      [card, info],
+      { opacity: 0, y: 40 },
       {
         opacity: 1,
-        x: 0,
+        y: 0,
         duration: 0.8,
+        stagger: 0.15,
         ease: "power2.out",
         scrollTrigger: {
           trigger: row,
-          start: "top 85%",
+          start: "top 80%",
           toggleActions: "play none none none"
         }
       }
@@ -478,324 +406,266 @@ function setupProjectEntrance(prefersReducedMotion) {
 }
 
 /**
- * Helper to compute an element's offset geometry relative to an ancestor wrapper.
- * Traverses offsetParent without getBoundingClientRect to remain completely unaffected by transforms.
+ * ==========================================================================
+ * SECTION 3: PHYSICAL INTERLOCKING METALLIC CHAINS
+ * ==========================================================================
  */
-function getOffsetRectRelativeTo(el, wrapper) {
-  let left = 0;
-  let top = 0;
-  let curr = el;
-  while (curr && curr !== wrapper) {
-    left += curr.offsetLeft;
-    top += curr.offsetTop;
-    curr = curr.offsetParent;
-  }
-  const width = el.offsetWidth;
-  const height = el.offsetHeight;
-  return {
-    left,
-    top,
-    width,
-    height,
-    right: left + width,
-    bottom: top + height
-  };
-}
-
-/**
- * FIX 2: CHAINS & COLLARS REBUILD
- * Straight fine chains between neighboring cards inside .projects-wrapper.
- * 1. S.y = upper.bottom, E.y = lower.top (no vertical offset).
- *    S.x = upperIsLeft ? upper.right - 32 : upper.left + 32.
- *    E.x = lowerIsRight ? lower.left + (isDesktop ? 56 : 32) : lower.right - (isDesktop ? 56 : 32).
- * 2. L = distance S to E, d = unit vector from S to E, angle = -atan2(E.x - S.x, E.y - S.y) in degrees.
- *    P0 = S + 14 * d, P1 = E - 14 * d, Lp = L - 28.
- *    Chain div at left = P0.x - 20, top = P0.y, width = 40, height = Lp, transform-origin = 20px 0, rotate(angle deg).
- *    SVG viewBox "0 0 40 Lp", width 40, height Lp.
- *    Odd link count: n = 2 * max(1, round(Lp / 40)) + 1, pitch = Lp / (n - 1).
- *    Link i: #link-narrow when even, #link-wide when odd, transform translate(20 {i * pitch}) scale(LINK_SCALE).
- * 3. Collars: metal collars centred on S and E, sitting half on card and half outside (z-index: 4).
- * 4. Layering: cards z-index 2, chain z-index 3, collars z-index 4.
- * 5. Animation: sway amplitude 0.8 degrees, tug 2px. Collars fade in over 0.2s at timeline start.
- */
-let activeChainTweens = [];
-let activeChainTriggers = [];
-
 function setupChains(prefersReducedMotion) {
+  const container = document.getElementById("projects");
   const wrapper = document.getElementById("projects-wrapper");
-  if (!wrapper) return;
+  if (!container || !wrapper) return;
 
-  function constructAllChains() {
-    // Kill previous GSAP animations and remove previous chain and collar DOM elements
-    activeChainTweens.forEach((t) => t.kill());
-    activeChainTriggers.forEach((tr) => tr.kill());
-    activeChainTweens = [];
-    activeChainTriggers = [];
+  const rows = Array.from(container.querySelectorAll(".project-row"));
+  if (rows.length < 2) return;
 
-    wrapper.querySelectorAll(".chain, .chain-collar").forEach((el) => el.remove());
+  const svgNS = "http://www.w3.org/2000/svg";
+  const xlinkNS = "http://www.w3.org/1999/xlink";
 
-    const rows = Array.from(wrapper.querySelectorAll(".project-row"));
-    if (rows.length < 2) return;
+  let chainSvg = document.getElementById("chain-overlay-svg");
+  if (!chainSvg) {
+    chainSvg = document.createElementNS(svgNS, "svg");
+    chainSvg.id = "chain-overlay-svg";
+    chainSvg.setAttribute("class", "chain-canvas");
+    chainSvg.setAttribute("aria-hidden", "true");
+    chainSvg.setAttribute("role", "presentation");
+    wrapper.appendChild(chainSvg);
+  }
 
-    const isDesktop = !window.matchMedia("(max-width: 899px)").matches;
+  const chainsData = [];
 
-    // Connect Card i to Card i+1 (exactly 4 chains for 5 cards)
+  function buildAllChains() {
+    chainSvg.innerHTML = "";
+    chainsData.length = 0;
+
+    const wrapRect = wrapper.getBoundingClientRect();
+    const svgWidth = wrapper.scrollWidth || wrapRect.width;
+    const svgHeight = wrapper.scrollHeight || wrapRect.height;
+
+    chainSvg.setAttribute("width", svgWidth);
+    chainSvg.setAttribute("height", svgHeight);
+    chainSvg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+
     for (let i = 0; i < rows.length - 1; i++) {
-      const upperRow = rows[i];
-      const lowerRow = rows[i + 1];
-      const upperCard = upperRow.querySelector(".project-card");
-      const lowerCard = lowerRow.querySelector(".project-card");
+      const fromRow = rows[i];
+      const toRow = rows[i + 1];
 
-      if (!upperCard || !lowerCard) continue;
+      const fromCard = fromRow.querySelector(".project-card");
+      const toCard = toRow.querySelector(".project-card");
+      if (!fromCard || !toCard) continue;
 
-      const upper = getOffsetRectRelativeTo(upperCard, wrapper);
-      const lower = getOffsetRectRelativeTo(lowerCard, wrapper);
+      const fromRect = fromCard.getBoundingClientRect();
+      const toRect = toCard.getBoundingClientRect();
 
-      const upperIsLeft = upperRow.classList.contains("project-row--left");
-      const lowerIsRight = lowerRow.classList.contains("project-row--right");
+      const startX = (fromRect.left + fromRect.width / 2) - wrapRect.left;
+      const startY = (fromRect.top + fromRect.height / 2) - wrapRect.top;
+      const endX = (toRect.left + toRect.width / 2) - wrapRect.left;
+      const endY = (toRect.top + toRect.height / 2) - wrapRect.top;
 
-      // 1. END POINTS: exact card edge attachments with no vertical offset
-      const S = {
-        x: upperIsLeft ? upper.right - 32 : upper.left + 32,
-        y: upper.bottom
-      };
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const straightDistance = Math.hypot(dx, dy);
 
-      const E = {
-        x: lowerIsRight
-          ? lower.left + (isDesktop ? 56 : 32)
-          : lower.right - (isDesktop ? 56 : 32),
-        y: lower.top
-      };
+      const targetLinkPitch = 24;
+      const numLinks = Math.max(16, Math.round(straightDistance / targetLinkPitch));
 
-      // 2. CHAIN PLACEMENT
-      const dxRaw = E.x - S.x;
-      const dyRaw = E.y - S.y;
-      const L = Math.hypot(dxRaw, dyRaw);
-      if (L <= 28) continue;
+      const isReduced = prefersReducedMotion || window.innerWidth < 768;
+      const baseSag = isReduced ? 0 : 54;
 
-      const dx = dxRaw / L;
-      const dy = dyRaw / L;
-      const angle = -Math.atan2(dxRaw, dyRaw) * (180 / Math.PI);
-
-      const P0 = {
-        x: S.x + 14 * dx,
-        y: S.y + 14 * dy
-      };
-      const Lp = L - 28;
-
-      // Create chain div (z-index: 3)
-      const chainDiv = document.createElement("div");
-      chainDiv.className = "chain";
-      chainDiv.style.position = "absolute";
-      chainDiv.style.left = `${P0.x - 20}px`;
-      chainDiv.style.top = `${P0.y}px`;
-      chainDiv.style.width = "40px";
-      chainDiv.style.height = `${Lp}px`;
-      chainDiv.style.transformOrigin = "20px 0";
-      chainDiv.style.transform = `rotate(${angle}deg)`;
-      chainDiv.style.overflow = "visible";
-      chainDiv.style.pointerEvents = "none";
-      chainDiv.style.zIndex = "3"; // Cards 2, Chain 3, Collars 4
-
-      // Inner sway container
-      const swayDiv = document.createElement("div");
-      swayDiv.className = "chain__sway";
-      swayDiv.style.transformOrigin = "20px 0";
-      swayDiv.style.width = "40px";
-      swayDiv.style.height = `${Lp}px`;
-
-      // SVG holding straight chain links
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("width", "40");
-      svg.setAttribute("height", `${Lp}`);
-      svg.setAttribute("viewBox", `0 0 40 ${Lp}`);
-      svg.style.overflow = "visible";
-
-      // Odd number of links so both ends are narrow
-      const n = 2 * Math.max(1, Math.round(Lp / 40)) + 1;
-      const pitch = Lp / (n - 1);
+      const g = document.createElementNS(svgNS, "g");
+      g.setAttribute("class", "chain-group");
+      chainSvg.appendChild(g);
 
       const linkElements = [];
-      for (let j = 0; j < n; j++) {
-        const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        const linkHref = j % 2 === 0 ? "#link-narrow" : "#link-wide";
-        use.setAttribute("href", linkHref);
-        use.setAttribute("xlink:href", linkHref);
-        use.setAttribute("transform", `translate(20 ${j * pitch}) scale(${LINK_SCALE})`);
-        svg.appendChild(use);
-        linkElements.push(use);
+
+      for (let j = 0; j < numLinks; j++) {
+        const isWide = (j % 2 === 0);
+        const symbolId = isWide ? "#link-wide" : "#link-narrow";
+
+        const useEl = document.createElementNS(svgNS, "use");
+        useEl.setAttributeNS(xlinkNS, "href", symbolId);
+        useEl.setAttribute("href", symbolId);
+        g.appendChild(useEl);
+        linkElements.push(useEl);
       }
 
-      swayDiv.appendChild(svg);
-      chainDiv.appendChild(swayDiv);
-      wrapper.appendChild(chainDiv);
-
-      // 3. COLLARS: small metal collars centred on S and E (z-index: 4)
-      function createCollar(point) {
-        const collar = document.createElement("div");
-        collar.className = "chain-collar";
-        collar.style.position = "absolute";
-        collar.style.left = `${point.x - 9}px`;
-        collar.style.top = `${point.y - 6}px`;
-        collar.style.width = "18px";
-        collar.style.height = "12px";
-        collar.style.pointerEvents = "none";
-        collar.style.zIndex = "4";
-        collar.innerHTML = '<svg width="18" height="12" viewBox="0 0 18 12"><rect x="0.75" y="0.75" width="16.5" height="10.5" rx="4" fill="url(#metal)" stroke="#2a2a2a" stroke-width="1.5"/><rect x="3" y="2" width="12" height="2.2" rx="1.1" fill="#fff" opacity=".4"/><circle cx="9" cy="6.8" r="1.4" fill="#2a2a2a"/></svg>';
-        return collar;
-      }
-
-      const collarS = createCollar(S);
-      const collarE = createCollar(E);
-      wrapper.appendChild(collarS);
-      wrapper.appendChild(collarE);
-
-      // Reduced motion or missing libraries: display collars and fully built chain still
-      if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-        collarS.style.opacity = "1";
-        collarE.style.opacity = "1";
-        linkElements.forEach((el, idx) => {
-          el.style.opacity = "1";
-          el.setAttribute("transform", `translate(20 ${idx * pitch}) scale(${LINK_SCALE})`);
-        });
-        continue;
-      }
-
-      // 5. ANIMATION: sway amplitude 0.8 degrees, tug 2px, collars fade in over 0.2s
-      let tugged = false;
-      let swayTween = null;
-
-      function startSway() {
-        if (swayTween) return;
-        swayTween = gsap.fromTo(
-          swayDiv,
-          { rotation: -0.8 },
-          {
-            rotation: 0.8,
-            duration: 2,
-            ease: "sine.inOut",
-            yoyo: true,
-            repeat: -1,
-            transformOrigin: "20px 0"
-          }
-        );
-        activeChainTweens.push(swayTween);
-      }
-
-      function triggerTug() {
-        if (tugged) return;
-        tugged = true;
-
-        const tugTween = gsap.to(swayDiv, {
-          y: 2,
-          duration: 0.2,
-          yoyo: true,
-          repeat: 1,
-          ease: "power1.inOut",
-          onComplete: () => {
-            startSway();
-          }
-        });
-        activeChainTweens.push(tugTween);
-
-        const cardTween = gsap.to([upperCard, lowerCard], {
-          y: "+=2",
-          duration: 0.2,
-          yoyo: true,
-          repeat: 1,
-          ease: "power1.inOut"
-        });
-        activeChainTweens.push(cardTween);
-      }
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: chainDiv,
-          start: "top 85%",
-          end: "bottom 60%",
-          scrub: 0.6,
-          onUpdate: (self) => {
-            if (self.progress >= 0.99 && !tugged) {
-              triggerTug();
-            }
-          }
-        }
-      });
-
-      // Collars fade in over 0.2s at the start of the build timeline
-      tl.fromTo(
-        [collarS, collarE],
-        { opacity: 0 },
-        { opacity: 1, duration: 0.2, ease: "none" },
-        0
-      );
-
-      tl.fromTo(
+      chainsData.push({
+        fromRow,
+        toRow,
+        fromCard,
+        toCard,
+        startX,
+        startY,
+        endX,
+        endY,
+        numLinks,
+        baseSag,
+        currentSag: baseSag,
         linkElements,
-        {
-          opacity: 0,
-          y: (k) => k * pitch - 12
-        },
-        {
-          opacity: 1,
-          y: (k) => k * pitch,
-          stagger: 0.05,
-          ease: "none"
-        },
-        0
-      );
-
-      activeChainTweens.push(tl);
-      if (tl.scrollTrigger) {
-        activeChainTriggers.push(tl.scrollTrigger);
-      }
+        targetSag: baseSag,
+        swayAngle: 0,
+        swayVelocity: 0
+      });
     }
+
+    renderChainsPositions();
   }
 
-  constructAllChains();
+  function getBezierPoint(p0, p1, p2, t) {
+    const inv = 1 - t;
+    return {
+      x: inv * inv * p0.x + 2 * inv * t * p1.x + t * t * p2.x,
+      y: inv * inv * p0.y + 2 * inv * t * p1.y + t * t * p2.y
+    };
+  }
 
-  // FIX 2.E: Recalculate everything after fonts & images load, on resize, and with ResizeObserver
-  window.addEventListener("load", () => {
-    constructAllChains();
-    if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
-  });
+  function getBezierTangent(p0, p1, p2, t) {
+    const inv = 1 - t;
+    return {
+      x: 2 * inv * (p1.x - p0.x) + 2 * t * (p2.x - p1.x),
+      y: 2 * inv * (p1.y - p0.y) + 2 * t * (p2.y - p1.y)
+    };
+  }
 
-  if (document.fonts) {
-    document.fonts.ready.then(() => {
-      constructAllChains();
-      if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+  function renderChainsPositions() {
+    const wrapRect = wrapper.getBoundingClientRect();
+
+    chainsData.forEach((chain) => {
+      const fromRect = chain.fromCard.getBoundingClientRect();
+      const toRect = chain.toCard.getBoundingClientRect();
+
+      const p0 = {
+        x: (fromRect.left + fromRect.width / 2) - wrapRect.left,
+        y: (fromRect.top + fromRect.height / 2) - wrapRect.top
+      };
+      const p2 = {
+        x: (toRect.left + toRect.width / 2) - wrapRect.left,
+        y: (toRect.top + toRect.height / 2) - wrapRect.top
+      };
+
+      const midX = (p0.x + p2.x) / 2;
+      const midY = (p0.y + p2.y) / 2;
+
+      const p1 = {
+        x: midX + Math.sin(chain.swayAngle) * (chain.currentSag * 0.4),
+        y: midY + chain.currentSag
+      };
+
+      const count = chain.numLinks;
+      for (let j = 0; j < count; j++) {
+        const t = count > 1 ? j / (count - 1) : 0.5;
+        const pt = getBezierPoint(p0, p1, p2, t);
+        const tangent = getBezierTangent(p0, p1, p2, t);
+        const angleDeg = (Math.atan2(tangent.y, tangent.x) * 180) / Math.PI + 90;
+
+        const useEl = chain.linkElements[j];
+        useEl.setAttribute(
+          "transform",
+          `translate(${pt.x.toFixed(2)}, ${pt.y.toFixed(2)}) rotate(${angleDeg.toFixed(2)}) scale(${LINK_SCALE})`
+        );
+      }
     });
   }
 
-  let resizeTimer;
+  buildAllChains();
+
+  let resizeTimeout;
   window.addEventListener("resize", () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      constructAllChains();
-      if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
-    }, 100);
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(buildAllChains, 150);
   });
 
-  if (typeof ResizeObserver !== "undefined") {
-    const ro = new ResizeObserver(() => {
-      constructAllChains();
-      if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+  if (prefersReducedMotion || window.innerWidth < 768) {
+    return;
+  }
+
+  let lastScrollY = window.scrollY;
+  let scrollVelocity = 0;
+  let isTicking = false;
+
+  window.addEventListener("scroll", () => {
+    const currentScrollY = window.scrollY;
+    const delta = currentScrollY - lastScrollY;
+    lastScrollY = currentScrollY;
+
+    scrollVelocity += delta * 0.28;
+    scrollVelocity = Math.max(-45, Math.min(45, scrollVelocity));
+
+    if (!isTicking) {
+      isTicking = true;
+      requestAnimationFrame(physicsLoop);
+    }
+  }, { passive: true });
+
+  wrapper.addEventListener("mousemove", (e) => {
+    const wrapRect = wrapper.getBoundingClientRect();
+    const mouseX = e.clientX - wrapRect.left;
+    const mouseY = e.clientY - wrapRect.top;
+
+    chainsData.forEach((chain) => {
+      const midX = (chain.startX + chain.endX) / 2;
+      const midY = (chain.startY + chain.endY) / 2 + chain.currentSag;
+
+      const dist = Math.hypot(mouseX - midX, mouseY - midY);
+      if (dist < 140) {
+        const force = (1 - dist / 140) * 0.12;
+        const dir = mouseX > midX ? 1 : -1;
+        chain.swayVelocity += dir * force;
+      }
     });
-    ro.observe(wrapper);
+
+    if (!isTicking) {
+      isTicking = true;
+      requestAnimationFrame(physicsLoop);
+    }
+  });
+
+  function physicsLoop() {
+    let hasMotion = false;
+
+    scrollVelocity *= 0.90;
+    if (Math.abs(scrollVelocity) < 0.05) scrollVelocity = 0;
+
+    chainsData.forEach((chain) => {
+      const dynamicSagTarget = Math.max(12, chain.baseSag + scrollVelocity);
+
+      chain.currentSag += (dynamicSagTarget - chain.currentSag) * 0.14;
+
+      const springK = 0.045;
+      const damping = 0.92;
+      const accel = -springK * chain.swayAngle;
+      chain.swayVelocity = (chain.swayVelocity + accel) * damping;
+      chain.swayAngle += chain.swayVelocity;
+
+      if (
+        Math.abs(chain.currentSag - chain.baseSag) > 0.1 ||
+        Math.abs(chain.swayVelocity) > 0.001 ||
+        Math.abs(chain.swayAngle) > 0.001
+      ) {
+        hasMotion = true;
+      }
+    });
+
+    renderChainsPositions();
+
+    if (hasMotion || Math.abs(scrollVelocity) > 0.05) {
+      requestAnimationFrame(physicsLoop);
+    } else {
+      isTicking = false;
+    }
   }
 }
 
 /**
- * Section 4: Remaining body entrance animation (0.1s delay between statement and paragraph)
+ * Statement Section Reveal Animation
  */
 function setupStatementEntrance(prefersReducedMotion) {
   if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
     return;
   }
 
-  const section = document.getElementById("statement");
-  const title = document.getElementById("statement-title");
-  const text = document.getElementById("statement-text");
+  const section = document.querySelector(".statement-section");
+  const title = document.querySelector(".statement-title");
+  const text = document.querySelector(".statement-text");
 
   if (!section || !title || !text) return;
 
@@ -811,46 +681,17 @@ function setupStatementEntrance(prefersReducedMotion) {
 }
 
 /**
- * FIX 3: Paper Stack Entrance Animation
- * When footer enters screen, paper stack drops in over 0.9s from translateY(48px), rotate(3deg) and opacity 0
+ * Global form submission handler
  */
-function setupPaperAnimation(prefersReducedMotion) {
-  const paperStack = document.getElementById("paper-stack");
-  const footer = document.querySelector(".site-footer");
-  if (!paperStack || !footer) return;
-
-  if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-    paperStack.style.opacity = "1";
-    paperStack.style.transform = "none";
-    return;
-  }
-
-  gsap.fromTo(
-    paperStack,
-    {
-      opacity: 0,
-      y: 48,
-      rotation: 3
-    },
-    {
-      opacity: 1,
-      y: 0,
-      rotation: 0,
-      duration: 0.9,
-      ease: "power2.out",
-      scrollTrigger: {
-        trigger: footer,
-        start: "top 80%",
-        toggleActions: "play none none none"
-      }
-    }
-  );
+function submitForm(data) {
+  // TODO: Connect to your real backend API or form endpoint here (e.g. fetch('/api/contact', ...))
+  console.log("Contact form submitted with data:", data);
 }
 
 /**
- * Section 6: Contact form validation, floating labels & submission
+ * Section 5 & 6: Contact Form Validation, Floating Labels, Drop-in Animation
  */
-function setupContactForm() {
+function initContactForm(prefersReducedMotion) {
   const form = document.getElementById("contact-form");
   const successState = document.getElementById("contact-success");
   if (!form) return;
@@ -957,6 +798,38 @@ function setupContactForm() {
       }
     }, 700);
   });
+
+  // Paper stack drop-in entrance animation
+  const paperStack = document.getElementById("paper-stack");
+  const footer = document.querySelector(".site-footer");
+
+  if (paperStack && footer) {
+    if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
+      paperStack.style.opacity = "1";
+      paperStack.style.transform = "none";
+    } else {
+      gsap.fromTo(
+        paperStack,
+        {
+          opacity: 0,
+          y: 48,
+          rotation: 3
+        },
+        {
+          opacity: 1,
+          y: 0,
+          rotation: 0,
+          duration: 0.9,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: footer,
+            start: "top 80%",
+            toggleActions: "play none none none"
+          }
+        }
+      );
+    }
+  }
 }
 
 /**
@@ -982,5 +855,76 @@ function setupSmoothScroll() {
         }
       }
     });
+  });
+}
+
+/**
+ * SECTION 6: Smooth Circle Expand Transition from Landing Page to Project Page
+ */
+function setupProjectTransitions(prefersReducedMotion) {
+  const rows = document.querySelectorAll(".project-row");
+  rows.forEach((row, index) => {
+    const proj = (window.SITE && window.SITE.projects && window.SITE.projects[index]) || null;
+    if (!proj) return;
+
+    const card = row.querySelector(".project-card");
+    const link = row.querySelector(".project-info__link");
+    const targetUrl = `project.html?p=${proj.slug}`;
+
+    function handleCardClick(e) {
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      e.preventDefault();
+
+      if (prefersReducedMotion || typeof gsap === "undefined") {
+        window.location.href = targetUrl;
+        return;
+      }
+
+      const rect = card ? card.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+      const clickX = e.clientX || rect.left + rect.width / 2;
+      const clickY = e.clientY || rect.top + rect.height / 2;
+
+      const worldColor = proj.world === "sage" ? "var(--sage)" : "var(--cream)";
+
+      const overlay = document.createElement("div");
+      overlay.style.position = "fixed";
+      overlay.style.inset = "0";
+      overlay.style.width = "100vw";
+      overlay.style.height = "100vh";
+      overlay.style.backgroundColor = worldColor;
+      overlay.style.zIndex = "99999";
+      overlay.style.pointerEvents = "none";
+      overlay.style.clipPath = `circle(0px at ${clickX}px ${clickY}px)`;
+      overlay.style.webkitClipPath = `circle(0px at ${clickX}px ${clickY}px)`;
+      document.body.appendChild(overlay);
+
+      const dx = Math.max(clickX, window.innerWidth - clickX);
+      const dy = Math.max(clickY, window.innerHeight - clickY);
+      const Rmax = Math.hypot(dx, dy) + 50;
+
+      const animObj = { r: 0 };
+      gsap.to(animObj, {
+        r: Rmax,
+        duration: 0.7,
+        ease: "power2.inOut",
+        onUpdate: () => {
+          overlay.style.clipPath = `circle(${animObj.r}px at ${clickX}px ${clickY}px)`;
+          overlay.style.webkitClipPath = `circle(${animObj.r}px at ${clickX}px ${clickY}px)`;
+        },
+        onComplete: () => {
+          window.location.href = targetUrl;
+        }
+      });
+    }
+
+    if (card) {
+      card.style.cursor = "pointer";
+      card.addEventListener("click", handleCardClick);
+    }
+    if (link) {
+      link.addEventListener("click", handleCardClick);
+    }
   });
 }

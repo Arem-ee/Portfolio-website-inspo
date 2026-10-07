@@ -11,101 +11,9 @@
 const LINK_SCALE = 0.5;
 
 /**
- * FIX 6: Global Site Content with Neutral Placeholders
- * Modify this object to change any textual content across the entire page.
+ * Global Site Content from content.js (window.SITE)
  */
-const SITE_CONTENT = {
-  brand: {
-    name: "Your Name",
-    description: "A short sentence describing your creative perspective and practice."
-  },
-  navigation: [
-    { label: "Work", href: "#projects" },
-    { label: "About", href: "#statement" },
-    { label: "Contact", href: "#contact" }
-  ],
-  hero: {
-    headlineLeft: "YOUR",
-    headlineRight: "NAME",
-    subtextLeft: "A concise introductory sentence describing your perspective.",
-    subtextRight: "A second concise sentence highlighting your core practice."
-  },
-  projects: [
-    {
-      id: 1,
-      title: "Project One",
-      description: "A short plain sentence describing the scope and outcome of this project.",
-      linkText: "View project",
-      url: "#",
-      image: "assets/project-1.jpg",
-      alt: "Project One overview"
-    },
-    {
-      id: 2,
-      title: "Project Two",
-      description: "A short plain sentence describing the scope and outcome of this project.",
-      linkText: "View project",
-      url: "#",
-      image: "assets/project-2.jpg",
-      alt: "Project Two overview"
-    },
-    {
-      id: 3,
-      title: "Project Three",
-      description: "A short plain sentence describing the scope and outcome of this project.",
-      linkText: "View project",
-      url: "#",
-      image: "assets/project-3.jpg",
-      alt: "Project Three overview"
-    },
-    {
-      id: 4,
-      title: "Project Four",
-      description: "A short plain sentence describing the scope and outcome of this project.",
-      linkText: "View project",
-      url: "#",
-      image: "assets/project-4.jpg",
-      alt: "Project Four overview"
-    },
-    {
-      id: 5,
-      title: "Project Five",
-      description: "A short plain sentence describing the scope and outcome of this project.",
-      linkText: "View project",
-      url: "#",
-      image: "assets/project-5.jpg",
-      alt: "Project Five overview"
-    }
-  ],
-  remainingBody: {
-    statement: "A clear two-line statement summarizing your perspective.",
-    paragraph: "A single paragraph of placeholder text offering further detail about your methodology, principles, and collaborative approach without extraneous decorative elements."
-  },
-  footer: {
-    description: "A brief concluding sentence about your work and availability.",
-    pages: [
-      { label: "Work", href: "#projects" },
-      { label: "About", href: "#statement" },
-      { label: "Contact", href: "#contact" }
-    ],
-    social: [
-      { label: "Link One", href: "#" },
-      { label: "Link Two", href: "#" },
-      { label: "Link Three", href: "#" }
-    ],
-    copyrightName: "Your Name. All rights reserved."
-  },
-  contact: {
-    options: [
-      { value: "option-1", label: "Option One" },
-      { value: "option-2", label: "Option Two" },
-      { value: "option-3", label: "Option Three" },
-      { value: "option-4", label: "Option Four" }
-    ],
-    successTitle: "Message received.",
-    successBody: "Thank you for reaching out. We will respond shortly."
-  }
-};
+const SITE_CONTENT = window.SITE || {};
 
 /**
  * Handle form submission
@@ -153,6 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupPaperAnimation(prefersReducedMotion);
   setupContactForm();
   setupSmoothScroll();
+  setupProjectTransitions(prefersReducedMotion);
 });
 
 /**
@@ -315,9 +224,9 @@ function populateSiteContent() {
     const imgEl = row.querySelector(".project-card__img");
 
     if (titleEl) titleEl.textContent = proj.title;
-    if (descEl) descEl.textContent = proj.description;
+    if (descEl) descEl.textContent = proj.summary || proj.description;
     if (linkEl) {
-      linkEl.href = proj.url || "#";
+      linkEl.href = `project.html?p=${proj.slug || 'project-' + (index + 1)}`;
       linkEl.innerHTML = `${proj.linkText || "View project"} <span class="project-info__arrow" aria-hidden="true">&rarr;</span>`;
     }
     if (imgEl && proj.image) {
@@ -982,5 +891,80 @@ function setupSmoothScroll() {
         }
       }
     });
+  });
+}
+
+/**
+ * SECTION 6: Smooth Circle Expand Transition from Landing Page to Project Page
+ */
+function setupProjectTransitions(prefersReducedMotion) {
+  const rows = document.querySelectorAll(".project-row");
+  rows.forEach((row, index) => {
+    const proj = (window.SITE && window.SITE.projects && window.SITE.projects[index]) || null;
+    if (!proj) return;
+
+    const card = row.querySelector(".project-card");
+    const link = row.querySelector(".project-info__link");
+    const targetUrl = `project.html?p=${proj.slug}`;
+
+    function handleCardClick(e) {
+      // Keep right-click, middle-click and ctrl/cmd/shift/alt-click default behavior
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      e.preventDefault();
+
+      if (prefersReducedMotion || typeof gsap === "undefined") {
+        window.location.href = targetUrl;
+        return;
+      }
+
+      const rect = card ? card.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+      const clickX = e.clientX || rect.left + rect.width / 2;
+      const clickY = e.clientY || rect.top + rect.height / 2;
+
+      // Project world color
+      const worldColor = proj.world === "sage" ? "var(--sage)" : "var(--cream)";
+
+      // Create fixed full-screen layer
+      const overlay = document.createElement("div");
+      overlay.style.position = "fixed";
+      overlay.style.inset = "0";
+      overlay.style.width = "100vw";
+      overlay.style.height = "100vh";
+      overlay.style.backgroundColor = worldColor;
+      overlay.style.zIndex = "99999";
+      overlay.style.pointerEvents = "none";
+      overlay.style.clipPath = `circle(0px at ${clickX}px ${clickY}px)`;
+      overlay.style.webkitClipPath = `circle(0px at ${clickX}px ${clickY}px)`;
+      document.body.appendChild(overlay);
+
+      // Radius that covers the entire screen
+      const dx = Math.max(clickX, window.innerWidth - clickX);
+      const dy = Math.max(clickY, window.innerHeight - clickY);
+      const Rmax = Math.hypot(dx, dy) + 50;
+
+      const animObj = { r: 0 };
+      gsap.to(animObj, {
+        r: Rmax,
+        duration: 0.7,
+        ease: "power2.inOut",
+        onUpdate: () => {
+          overlay.style.clipPath = `circle(${animObj.r}px at ${clickX}px ${clickY}px)`;
+          overlay.style.webkitClipPath = `circle(${animObj.r}px at ${clickX}px ${clickY}px)`;
+        },
+        onComplete: () => {
+          window.location.href = targetUrl;
+        }
+      });
+    }
+
+    if (card) {
+      card.style.cursor = "pointer";
+      card.addEventListener("click", handleCardClick);
+    }
+    if (link) {
+      link.addEventListener("click", handleCardClick);
+    }
   });
 }

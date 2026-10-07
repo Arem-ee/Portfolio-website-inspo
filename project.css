@@ -1,0 +1,542 @@
+/* ==========================================================================
+   Kinetic Portfolio & Zigzag Showcase - Project Page Styling
+   ========================================================================== */
+
+/* PROBLEM 1: SCROLL BEHAVIOR & OVERSCROLL
+   On project pages the html element must have scroll-behavior: auto.
+   Remove every smooth-scrolling rule and add overscroll-behavior-y: none. */
+html {
+  scroll-behavior: auto !important;
+  overscroll-behavior-y: none;
+}
+
+/* PROBLEM 1.4: No ancestor of sticky stages may have overflow other than visible or clip */
+html,
+body,
+#project-root {
+  overflow-x: clip;
+}
+
+/* Fixed Shared Nav at Top of Project Pages */
+.page-project .site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  padding: 32px 48px;
+  background: transparent;
+  pointer-events: auto;
+}
+
+/* ==========================================================================
+   SECTION 1 - FIRST SCREEN (100svh Atmospheric World)
+   ========================================================================== */
+
+.project-hero-screen {
+  height: 100svh;
+  min-height: 100svh;
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 48px;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: background-color 0.4s ease;
+}
+
+.project-hero-content {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.project-hero-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 40px;
+  width: 100%;
+  gap: 32px;
+}
+
+.project-hero-title {
+  font-family: var(--font-heading);
+  font-size: clamp(56px, 11vw, 168px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  margin: 0;
+  flex: 1;
+}
+
+.project-hero-summary {
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink);
+  max-width: 360px;
+  margin: 0;
+  text-align: left;
+}
+
+/* Plain Row at Very Bottom: 3 Columns with 1px --line Divider Above */
+.project-hero-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  width: 100%;
+}
+
+.project-meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-meta-val {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.project-meta-caption {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: rgba(34, 33, 30, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+   SECTION 2 - PROJECT PAGE BODY
+   ========================================================================== */
+
+.project-body {
+  background-color: var(--bg);
+  padding: 160px 48px;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 160px;
+  position: relative;
+  z-index: 1;
+}
+
+.project-block {
+  width: 100%;
+}
+
+/* Block A: 16:9 Parallax Wide Image */
+.project-block-a {
+  width: 100%;
+}
+
+.parallax-media-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
+  background-color: var(--sage);
+  overflow: hidden;
+  position: relative;
+}
+
+.parallax-img {
+  width: 100%;
+  height: 120%;
+  object-fit: cover;
+  display: block;
+  transform: translateY(0);
+  will-change: transform;
+}
+
+/* Block B: "The problem" 2-Column (Heading 4/12, Paragraphs 8/12) */
+.project-block-b {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.block-b-heading {
+  grid-column: span 4;
+  font-family: var(--font-heading);
+  font-size: clamp(32px, 4vw, 56px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
+}
+
+.block-b-text {
+  grid-column: span 8;
+  max-width: 560px;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Block C: "The process" Mirrored Layout & 2 Asymmetric Images (Right -96px) */
+.project-block-c {
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+}
+
+.block-c-layout {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.block-c-text {
+  grid-column: span 8;
+  max-width: 560px;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.block-c-heading {
+  grid-column: span 4;
+  font-family: var(--font-heading);
+  font-size: clamp(32px, 4vw, 56px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
+  text-align: right;
+}
+
+.block-c-images {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  width: 100%;
+  margin-bottom: 96px;
+}
+
+.block-c-img-wrap {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  background-color: var(--sage);
+}
+
+.block-c-img-wrap--right {
+  transform: translateY(96px);
+}
+
+.block-c-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Block D: "The result" Centered 720px Column & 21:9 Full-width Image */
+.project-block-d {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 56px;
+}
+
+.block-d-text {
+  max-width: 720px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.block-d-heading {
+  font-family: var(--font-heading);
+  font-size: clamp(32px, 4vw, 56px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
+}
+
+.block-d-text p {
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.block-d-media {
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  background-color: var(--sage);
+}
+
+.block-d-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ==========================================================================
+   SECTION 3 & PROBLEM 2 - SCROLL-DRIVEN PORTALS
+   ========================================================================== */
+
+.portal-section {
+  height: 200svh;
+  position: relative;
+  background-color: var(--bg);
+  margin-top: 160px;
+}
+
+/* Portal back above the first screen: no top margin */
+.portal-section.portal-back {
+  margin-top: 0 !important;
+}
+
+.portal-sticky-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  width: 100%;
+  overflow: clip; /* Required: clip, never hidden/auto */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Replica Container of Target Screen */
+.portal-replica-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100svh;
+  pointer-events: none;
+  z-index: 2;
+  will-change: clip-path;
+}
+
+/* Circle Border & Shadow while Small */
+.portal-circle-border {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 34px -10px rgba(34, 33, 30, 0.2);
+  pointer-events: none;
+  z-index: 3;
+  width: 180px;
+  height: 180px;
+  will-change: width, height, opacity;
+}
+
+/* Target Title Label centered below circle start position */
+.portal-next-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(50% + 114px);
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  pointer-events: none;
+  z-index: 4;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+/* Accessible Focusable Link (Section 5) */
+.portal-focus-link {
+  position: absolute;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  background-color: var(--cream);
+  padding: 10px 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.portal-focus-link:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.portal-focus-link--back {
+  top: 32px;
+}
+
+/* Reduced Motion Navigation (Problem 2.5) */
+.reduced-motion-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+  padding: 80px 24px;
+  margin-top: 40px;
+}
+
+.portal-reduced-link {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  transition: opacity 0.2s ease;
+}
+
+.portal-reduced-link:hover {
+  opacity: 0.7;
+}
+
+.portal-reduced-link:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* ==========================================================================
+   RESPONSIVE (UNDER 900PX)
+   ========================================================================== */
+
+@media (max-width: 899px) {
+  .page-project .site-header {
+    padding: 20px !important;
+  }
+
+  .project-hero-screen {
+    padding: 20px !important;
+  }
+
+  .project-hero-main {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 18px !important;
+    margin-bottom: 28px !important;
+  }
+
+  .project-hero-title {
+    font-size: clamp(48px, 15vw, 96px) !important;
+    line-height: 0.98 !important;
+  }
+
+  .project-hero-summary {
+    max-width: 100% !important;
+    font-size: 16px !important;
+  }
+
+  .project-hero-meta {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    padding-top: 16px !important;
+  }
+
+  .project-meta-col {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .project-meta-col:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .project-body {
+    padding: 80px 20px !important;
+    gap: 80px !important;
+  }
+
+  .project-block-b {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .block-b-heading {
+    grid-column: span 1 !important;
+  }
+
+  .block-b-text {
+    grid-column: span 1 !important;
+    max-width: 100% !important;
+  }
+
+  .block-c-layout {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .block-c-heading {
+    grid-column: span 1 !important;
+    text-align: left !important;
+    order: -1;
+  }
+
+  .block-c-text {
+    grid-column: span 1 !important;
+    max-width: 100% !important;
+  }
+
+  .block-c-images {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+    margin-bottom: 40px !important;
+  }
+
+  .block-c-img-wrap--right {
+    transform: none !important;
+  }
+
+  .portal-section {
+    margin-top: 80px !important;
+  }
+
+  .portal-section.portal-back {
+    margin-top: 0 !important;
+  }
+}
