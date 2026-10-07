@@ -441,14 +441,26 @@ body {
 }
 
 /* ==========================================================================
-   CHAINS LAYER (DESKTOP)
+   CHAINS LAYER & COLLARS (DESKTOP)
    ========================================================================== */
 
 .chain {
   position: absolute;
-  z-index: 1; /* Lower than cards (cards are z-index: 2) */
+  z-index: 3; /* Chain is z-index 3 (between cards z-index 2 and collars z-index 4) */
   pointer-events: none;
   overflow: visible;
+}
+
+.chain-collar {
+  position: absolute;
+  width: 18px;
+  height: 12px;
+  pointer-events: none;
+  z-index: 4; /* Collars are z-index 4 (mounted on top of card edges and chain ends) */
+}
+
+.chain-collar svg {
+  display: block;
 }
 
 .chain__sway {
@@ -1096,10 +1108,10 @@ body {
     transform: none !important;
   }
 
-  /* Text blocks under card: width is card width minus 48px */
+  /* Text blocks under card: clear of the chain strip with 60px padding on chain side */
   .project-info {
     margin-top: 20px;
-    width: calc(100% - var(--gutter) - 48px) !important;
+    width: calc(100% - var(--gutter) - 60px) !important;
     flex: 0 0 auto !important;
     position: relative;
     z-index: 1 !important; /* Text is z-index: 1 */
@@ -1108,14 +1120,14 @@ body {
   .project-row--left .project-info {
     margin-right: auto;
     margin-left: 0;
-    padding-right: 48px;
+    padding-right: 60px;
     text-align: left;
   }
 
   .project-row--right .project-info {
     margin-left: auto;
     margin-right: 0;
-    padding-left: 48px;
+    padding-left: 60px;
     text-align: right;
   }
 
@@ -1136,9 +1148,13 @@ body {
     font-size: 14px;
   }
 
-  /* M3: Chains Mobile (z-index: 0, order back-to-front: chain 0, text 1, cards 2) */
+  /* M3: Chains & Collars Mobile (layering back-to-front: text 1, cards 2, chain 3, collars 4) */
   .chain {
-    z-index: 0 !important;
+    z-index: 3 !important;
+  }
+
+  .chain-collar {
+    z-index: 4 !important;
   }
 
   /* M4: Remaining Body */

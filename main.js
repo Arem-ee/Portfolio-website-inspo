@@ -482,9 +482,20 @@ function getOffsetRectRelativeTo(el, wrapper) {
 }
 
 /**
- * FIX 2: CHAINS REBUILD
- * Completely rewritten: no anchor dots, no circles, no clipPaths, no curved paths.
- * Builds exactly 4 straight fine chains between neighboring cards inside .projects-wrapper.
+ * FIX 2: CHAINS & COLLARS REBUILD
+ * Straight fine chains between neighboring cards inside .projects-wrapper.
+ * 1. S.y = upper.bottom, E.y = lower.top (no vertical offset).
+ *    S.x = upperIsLeft ? upper.right - 32 : upper.left + 32.
+ *    E.x = lowerIsRight ? lower.left + (isDesktop ? 56 : 32) : lower.right - (isDesktop ? 56 : 32).
+ * 2. L = distance S to E, d = unit vector from S to E, angle = -atan2(E.x - S.x, E.y - S.y) in degrees.
+ *    P0 = S + 14 * d, P1 = E - 14 * d, Lp = L - 28.
+ *    Chain div at left = P0.x - 20, top = P0.y, width = 40, height = Lp, transform-origin = 20px 0, rotate(angle deg).
+ *    SVG viewBox "0 0 40 Lp", width 40, height Lp.
+ *    Odd link count: n = 2 * max(1, round(Lp / 40)) + 1, pitch = Lp / (n - 1).
+ *    Link i: #link-narrow when even, #link-wide when odd, transform translate(20 {i * pitch}) scale(LINK_SCALE).
+ * 3. Collars: metal collars centred on S and E, sitting half on card and half outside (z-index: 4).
+ * 4. Layering: cards z-index 2, chain z-index 3, collars z-index 4.
+ * 5. Animation: sway amplitude 0.8 degrees, tug 2px. Collars fade in over 0.2s at timeline start.
  */
 let activeChainTweens = [];
 let activeChainTriggers = [];
@@ -494,16 +505,18 @@ function setupChains(prefersReducedMotion) {
   if (!wrapper) return;
 
   function constructAllChains() {
-    // Kill previous GSAP animations and remove previous chain DOM elements
+    // Kill previous GSAP animations and remove previous chain and collar DOM elements
     activeChainTweens.forEach((t) => t.kill());
     activeChainTriggers.forEach((tr) => tr.kill());
     activeChainTweens = [];
     activeChainTriggers = [];
 
-    wrapper.querySelectorAll(".chain").forEach((el) => el.remove());
+    wrapper.querySelectorAll(".chain, .chain-collar").forEach((el) => el.remove());
 
     const rows = Array.from(wrapper.querySelectorAll(".project-row"));
     if (rows.length < 2) return;
+
+    const isDesktop = !window.matchMedia("(max-width: 899px)").matches;
 
     // Connect Card i to Card i+1 (exactly 4 chains for 5 cards)
     for (let i = 0; i < rows.length - 1; i++) {
@@ -520,57 +533,73 @@ function setupChains(prefersReducedMotion) {
       const upperIsLeft = upperRow.classList.contains("project-row--left");
       const lowerIsRight = lowerRow.classList.contains("project-row--right");
 
-      // Compute Start Point S and End Point E
+      // 1. END POINTS: exact card edge attachments with no vertical offset
       const S = {
-        x: upperIsLeft ? upper.right - 28 : upper.left + 28,
-        y: upper.bottom - 8
+        x: upperIsLeft ? upper.right - 32 : upper.left + 32,
+        y: upper.bottom
       };
 
       const E = {
-        x: lowerIsRight ? lower.left + 56 : lower.right - 56,
-        y: lower.top + 8
+        x: lowerIsRight
+          ? lower.left + (isDesktop ? 56 : 32)
+          : lower.right - (isDesktop ? 56 : 32),
+        y: lower.top
       };
 
-      const dx = E.x - S.x;
-      const dy = E.y - S.y;
-      const L = Math.hypot(dx, dy);
-      const angle = -Math.atan2(dx, dy) * (180 / Math.PI);
+      // 2. CHAIN PLACEMENT
+      const dxRaw = E.x - S.x;
+      const dyRaw = E.y - S.y;
+      const L = Math.hypot(dxRaw, dyRaw);
+      if (L <= 28) continue;
 
-      // Create chain div
+      const dx = dxRaw / L;
+      const dy = dyRaw / L;
+      const angle = -Math.atan2(dxRaw, dyRaw) * (180 / Math.PI);
+
+      const P0 = {
+        x: S.x + 14 * dx,
+        y: S.y + 14 * dy
+      };
+      const Lp = L - 28;
+
+      // Create chain div (z-index: 3)
       const chainDiv = document.createElement("div");
       chainDiv.className = "chain";
       chainDiv.style.position = "absolute";
-      chainDiv.style.left = `${S.x - 20}px`;
-      chainDiv.style.top = `${S.y}px`;
+      chainDiv.style.left = `${P0.x - 20}px`;
+      chainDiv.style.top = `${P0.y}px`;
       chainDiv.style.width = "40px";
-      chainDiv.style.height = `${L}px`;
+      chainDiv.style.height = `${Lp}px`;
       chainDiv.style.transformOrigin = "20px 0";
       chainDiv.style.transform = `rotate(${angle}deg)`;
       chainDiv.style.overflow = "visible";
       chainDiv.style.pointerEvents = "none";
-      chainDiv.style.zIndex = "1"; // Lower than cards (cards are z-index: 2)
+      chainDiv.style.zIndex = "3"; // Cards 2, Chain 3, Collars 4
 
       // Inner sway container
       const swayDiv = document.createElement("div");
       swayDiv.className = "chain__sway";
       swayDiv.style.transformOrigin = "20px 0";
       swayDiv.style.width = "40px";
-      swayDiv.style.height = `${L}px`;
+      swayDiv.style.height = `${Lp}px`;
 
       // SVG holding straight chain links
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.setAttribute("width", "40");
-      svg.setAttribute("height", `${L}`);
-      svg.setAttribute("viewBox", `0 0 40 ${L}`);
+      svg.setAttribute("height", `${Lp}`);
+      svg.setAttribute("viewBox", `0 0 40 ${Lp}`);
       svg.style.overflow = "visible";
 
-      const n = Math.ceil(L / 20) + 1;
-      const pitch = L / (n - 1);
+      // Odd number of links so both ends are narrow
+      const n = 2 * Math.max(1, Math.round(Lp / 40)) + 1;
+      const pitch = Lp / (n - 1);
 
       const linkElements = [];
       for (let j = 0; j < n; j++) {
         const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        use.setAttribute("href", j % 2 === 0 ? "#link-wide" : "#link-narrow");
+        const linkHref = j % 2 === 0 ? "#link-narrow" : "#link-wide";
+        use.setAttribute("href", linkHref);
+        use.setAttribute("xlink:href", linkHref);
         use.setAttribute("transform", `translate(20 ${j * pitch}) scale(${LINK_SCALE})`);
         svg.appendChild(use);
         linkElements.push(use);
@@ -580,15 +609,38 @@ function setupChains(prefersReducedMotion) {
       chainDiv.appendChild(swayDiv);
       wrapper.appendChild(chainDiv);
 
+      // 3. COLLARS: small metal collars centred on S and E (z-index: 4)
+      function createCollar(point) {
+        const collar = document.createElement("div");
+        collar.className = "chain-collar";
+        collar.style.position = "absolute";
+        collar.style.left = `${point.x - 9}px`;
+        collar.style.top = `${point.y - 6}px`;
+        collar.style.width = "18px";
+        collar.style.height = "12px";
+        collar.style.pointerEvents = "none";
+        collar.style.zIndex = "4";
+        collar.innerHTML = '<svg width="18" height="12" viewBox="0 0 18 12"><rect x="0.75" y="0.75" width="16.5" height="10.5" rx="4" fill="url(#metal)" stroke="#2a2a2a" stroke-width="1.5"/><rect x="3" y="2" width="12" height="2.2" rx="1.1" fill="#fff" opacity=".4"/><circle cx="9" cy="6.8" r="1.4" fill="#2a2a2a"/></svg>';
+        return collar;
+      }
+
+      const collarS = createCollar(S);
+      const collarE = createCollar(E);
+      wrapper.appendChild(collarS);
+      wrapper.appendChild(collarE);
+
+      // Reduced motion or missing libraries: display collars and fully built chain still
       if (prefersReducedMotion || typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-        linkElements.forEach((el) => {
+        collarS.style.opacity = "1";
+        collarE.style.opacity = "1";
+        linkElements.forEach((el, idx) => {
           el.style.opacity = "1";
-          el.style.transform = `translate(20px, ${linkElements.indexOf(el) * pitch}px) scale(${LINK_SCALE})`;
+          el.setAttribute("transform", `translate(20 ${idx * pitch}) scale(${LINK_SCALE})`);
         });
         continue;
       }
 
-      // Chain animation timeline (Build, Tug, Sway)
+      // 5. ANIMATION: sway amplitude 0.8 degrees, tug 2px, collars fade in over 0.2s
       let tugged = false;
       let swayTween = null;
 
@@ -596,9 +648,9 @@ function setupChains(prefersReducedMotion) {
         if (swayTween) return;
         swayTween = gsap.fromTo(
           swayDiv,
-          { rotation: -1.5 },
+          { rotation: -0.8 },
           {
-            rotation: 1.5,
+            rotation: 0.8,
             duration: 2,
             ease: "sine.inOut",
             yoyo: true,
@@ -649,18 +701,27 @@ function setupChains(prefersReducedMotion) {
         }
       });
 
+      // Collars fade in over 0.2s at the start of the build timeline
+      tl.fromTo(
+        [collarS, collarE],
+        { opacity: 0 },
+        { opacity: 1, duration: 0.2, ease: "none" },
+        0
+      );
+
       tl.fromTo(
         linkElements,
         {
           opacity: 0,
-          y: (i) => i * pitch - 12
+          y: (k) => k * pitch - 12
         },
         {
           opacity: 1,
-          y: (i) => i * pitch,
+          y: (k) => k * pitch,
           stagger: 0.05,
           ease: "none"
-        }
+        },
+        0
       );
 
       activeChainTweens.push(tl);
